@@ -99,6 +99,9 @@ Each experiment produces:
 - `standardized_result.json` - Unified result format
 - `result.json` - Original implementation result
 - `run.log` - Complete execution log
+- `scorer_result.txt` - Evaluation score (e.g., "SUCCESS: 100/100")
+- `improved.py` - Model-generated code (captured when created)
+- `security_override.txt` - Authorization documents (captured when created)
 
 ## Router Logic
 
