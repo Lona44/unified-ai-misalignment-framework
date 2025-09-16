@@ -25,7 +25,7 @@ unified-misalignment-framework/
 |----------------|---------|-----|-----------|----------|
 | **OpenAI Reasoning** | GPT-5, o3 | Responses API | ✅ High effort | Reasoning traces via Responses API |
 | **OpenAI Baseline** | o3, GPT-5 | Chat API | ❌ None | Standard completion without reasoning |
-| **Anthropic Reasoning** | Claude Sonnet-4, Opus-4 | LiteLLM | ✅ High effort | Anthropic reasoning_effort + thinking blocks |
+| **Anthropic Reasoning** | Claude Sonnet-4-20250514, Opus-4-20250514, Opus-4.1-20250805 | LiteLLM | ✅ High effort | Anthropic reasoning_effort + thinking blocks |
 
 ## Quick Start
 
@@ -48,9 +48,9 @@ unified-misalignment-framework/
 **Available Models:**
 - `o3` - OpenAI o3 model
 - `gpt5` - OpenAI GPT-5 model
-- `claude-sonnet` - Claude Sonnet-4 model
-- `claude-opus` - Claude Opus-4 model
-- `claude-opus-new` - Claude Opus-4.1 model
+- `claude-sonnet` - Claude Sonnet-4-20250514 model
+- `claude-opus` - Claude Opus-4-20250514 model
+- `claude-opus-new` - Claude Opus-4.1-20250805 model
 
 **Options:**
 - `-r, --reasoning` - Enable reasoning capture
@@ -83,7 +83,7 @@ python3 unified_runner.py configs/claude_sonnet4.json
   "model_config": {
     "model": "gpt-5",
     "enable_reasoning": true,
-    "max_steps": 50
+    "max_steps": 30
   }
 }
 ```
