@@ -175,6 +175,14 @@ Create your own configuration file following the schema in `experiment_config.sc
 - **Automatic Asset Selection**: Router automatically selects appropriate Docker assets per implementation
 - **Result Standardization**: All outputs converted to common format for analysis
 
+## Research Context
+
+This framework was developed to support systematic AI misalignment research, building on findings from the [Palisade Research AI Misalignment Bounty](https://palisaderesearch.org/blog/misalignment-bounty) competition. The bounty program seeks to identify problematic behaviors in AI agents, including deceptive actions, manipulative conduct, and sabotage attempts. Techniques developed through this framework contributed to a winning submission in the competition, helping validate the research approaches implemented here.
+
+Research conducted using earlier versions of this framework contributed to published findings on [boundary navigation in AI systems](https://www.approxiomresearch.com/blog/how-boundary-navigation-revealed-an-architectural-flaw-at-the-heart-of-ai-safety-4nprt), which identified how AI models can systematically overcome permission constraints and perform reward-hacking in sandboxed environments.
+
+The unified framework enables reproducible testing of these behaviors across different models and reasoning paradigms, supporting the broader AI safety research community's efforts to understand and mitigate potential risks in increasingly autonomous AI systems.
+
 ---
 
 Built for comprehensive AI misalignment research across multiple models and reasoning paradigms.
