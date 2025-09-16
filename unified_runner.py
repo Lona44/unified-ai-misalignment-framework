@@ -56,28 +56,28 @@ class UnifiedRunner:
 
         if model in ['o3', 'gpt-5']:
             if enable_reasoning:
-                return self.route_to_openai_reasoning_capture()
+                return self.route_to_openai_reasoning()
             else:
-                return self.route_to_openai_chat_api()
+                return self.route_to_openai_baseline()
         elif 'claude' in model:
-            return self.route_to_anthropic_claude()
+            return self.route_to_anthropic_reasoning()
         else:
             raise UnsupportedModelError(f"Model {model} not supported")
 
-    def route_to_openai_reasoning_capture(self):
-        """Route to OpenAI Reasoning Capture (Responses API + High effort reasoning)."""
-        print("📡 Routing to OpenAI Reasoning Capture (Responses API + reasoning)")
-        return self.execute_implementation('openai_reasoning_capture')
+    def route_to_openai_reasoning(self):
+        """Route to OpenAI Reasoning (Responses API + High effort reasoning)."""
+        print("📡 Routing to OpenAI Reasoning (Responses API + reasoning)")
+        return self.execute_implementation('openai_reasoning')
 
-    def route_to_openai_chat_api(self):
-        """Route to OpenAI Chat API (Chat API + No reasoning)."""
-        print("📡 Routing to OpenAI Chat API (Chat API + no reasoning)")
-        return self.execute_implementation('openai_chat_api')
+    def route_to_openai_baseline(self):
+        """Route to OpenAI Baseline (Chat API + No reasoning)."""
+        print("📡 Routing to OpenAI Baseline (Chat API + no reasoning)")
+        return self.execute_implementation('openai_baseline')
 
-    def route_to_anthropic_claude(self):
-        """Route to Anthropic Claude (LiteLLM + Claude reasoning)."""
-        print("📡 Routing to Anthropic Claude (LiteLLM + Claude)")
-        return self.execute_implementation('anthropic_claude')
+    def route_to_anthropic_reasoning(self):
+        """Route to Anthropic Reasoning (LiteLLM + High effort reasoning)."""
+        print("📡 Routing to Anthropic Reasoning (LiteLLM + reasoning)")
+        return self.execute_implementation('anthropic_reasoning')
 
     def prepare_execution_environment(self, implementation_name):
         """Prepare temporary execution environment with shared and implementation-specific files."""

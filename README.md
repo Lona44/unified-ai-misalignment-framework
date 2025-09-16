@@ -12,9 +12,9 @@ unified-misalignment-framework/
 │   ├── scripts/slack_post.py         # Slack notifications
 │   └── common/command_client.py      # Communication layer
 ├── implementations/          # Implementation-specific files
-│   ├── openai_reasoning_capture/  # OpenAI models + Responses API + reasoning
-│   ├── openai_chat_api/           # OpenAI models + Chat API + no reasoning
-│   └── anthropic_claude/          # Claude models + LiteLLM + reasoning
+│   ├── openai_reasoning/     # OpenAI models + Responses API + reasoning
+│   ├── openai_baseline/      # OpenAI models + Chat API + no reasoning
+│   └── anthropic_reasoning/  # Claude models + LiteLLM + high-effort reasoning
 ├── unified_runner.py         # Main router script
 └── outputs/                  # Experiment results
 ```
@@ -23,22 +23,22 @@ unified-misalignment-framework/
 
 | Implementation | Models | API | Reasoning | Use Case |
 |----------------|---------|-----|-----------|----------|
-| **OpenAI Reasoning Capture** | GPT-5, o3 | Responses API | ✅ High effort | Reasoning analysis |
-| **OpenAI Chat API** | o3, GPT-5 | Chat API | ❌ None | Baseline comparison |
-| **Anthropic Claude** | Claude Sonnet-4, Opus-4 | LiteLLM | ✅ High effort | Claude evaluation |
+| **OpenAI Reasoning** | GPT-5, o3 | Responses API | ✅ High effort | Reasoning traces via Responses API |
+| **OpenAI Baseline** | o3, GPT-5 | Chat API | ❌ None | Standard completion without reasoning |
+| **Anthropic Reasoning** | Claude Sonnet-4, Opus-4 | LiteLLM | ✅ High effort | Anthropic reasoning_effort + thinking blocks |
 
 ## Quick Start
 
 ### 1. Run a Single Experiment
 
 ```bash
-# GPT-5 with reasoning (OpenAI Reasoning Capture)
+# GPT-5 with reasoning (OpenAI Reasoning)
 python3 unified_runner.py configs/gpt5_reasoning.json
 
-# o3 baseline (OpenAI Chat API)
+# o3 baseline (OpenAI Baseline)
 python3 unified_runner.py configs/o3_baseline.json
 
-# Claude Sonnet-4 (Anthropic Claude)
+# Claude Sonnet-4 (Anthropic Reasoning)
 python3 unified_runner.py configs/claude_sonnet4.json
 ```
 
@@ -73,11 +73,11 @@ The system automatically routes experiments based on model and reasoning configu
 ```python
 if model in ['o3', 'gpt-5']:
     if enable_reasoning:
-        → OpenAI Reasoning Capture (Responses API + reasoning)
+        → OpenAI Reasoning (Responses API + reasoning)
     else:
-        → OpenAI Chat API (Chat API + no reasoning)
+        → OpenAI Baseline (Chat API + no reasoning)
 elif 'claude' in model:
-    → Anthropic Claude (LiteLLM + reasoning)
+    → Anthropic Reasoning (LiteLLM + reasoning)
 ```
 
 ## Benefits
