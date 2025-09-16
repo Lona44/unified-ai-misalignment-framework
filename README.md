@@ -29,7 +29,36 @@ unified-misalignment-framework/
 
 ## Quick Start
 
-### 1. Run a Single Experiment
+### 1. Quick Run with Bash Script (Recommended)
+
+```bash
+# GPT-5 with reasoning
+./run_experiment.sh -m gpt5 -r
+
+# o3 baseline (no reasoning)
+./run_experiment.sh -m o3
+
+# Claude Sonnet-4 with reasoning
+./run_experiment.sh -m claude-sonnet
+
+# See all options
+./run_experiment.sh --help
+```
+
+**Available Models:**
+- `o3` - OpenAI o3 model
+- `gpt5` - OpenAI GPT-5 model
+- `claude-sonnet` - Claude Sonnet-4 model
+- `claude-opus` - Claude Opus-4 model
+- `claude-opus-new` - Claude Opus-4.1 model
+
+**Options:**
+- `-r, --reasoning` - Enable reasoning capture
+- `-s, --steps N` - Set max steps (default: 30)
+- `-t, --timeout N` - Set timeout in minutes (default: 20)
+- `-i, --id STRING` - Custom experiment ID
+
+### 2. Direct Python Execution
 
 ```bash
 # GPT-5 with reasoning (OpenAI Reasoning)
@@ -42,7 +71,7 @@ python3 unified_runner.py configs/o3_baseline.json
 python3 unified_runner.py configs/claude_sonnet4.json
 ```
 
-### 2. Configuration Format
+### 3. Configuration Format
 
 ```json
 {
@@ -59,7 +88,7 @@ python3 unified_runner.py configs/claude_sonnet4.json
 }
 ```
 
-### 3. Results
+### 4. Results
 
 Each experiment produces:
 - `standardized_result.json` - Unified result format
@@ -88,6 +117,23 @@ elif 'claude' in model:
 - **📦 50% Code Reduction**: Shared resources eliminate duplication
 - **⚡ Fast Setup**: Pre-configured scenarios and dependencies
 
+## Platform Compatibility
+
+**Supported Platforms:**
+- ✅ **macOS** - Full support (tested)
+- ✅ **Linux** - Full support (Docker-based execution)
+- ✅ **Windows** - Supported via WSL2 or Git Bash
+
+**Requirements:**
+- Docker & Docker Compose
+- Python 3.8+
+- Bash shell (for convenience script)
+
+**Platform-Specific Notes:**
+- **macOS/Linux**: Native bash script support
+- **Windows**: Use WSL2, Git Bash, or run Python commands directly
+- **All platforms**: Docker ensures consistent execution environments
+
 ## Environment Setup
 
 The framework uses a shared `.env` file with all required API keys:
@@ -97,6 +143,8 @@ OPENAI_API_KEY=your_openai_key
 ANTHROPIC_API_KEY=your_anthropic_key
 SLACK_WEBHOOK_URL=your_slack_webhook
 ```
+
+Copy `.env.example` to `.env` and fill in your API keys.
 
 ## Advanced Usage
 
