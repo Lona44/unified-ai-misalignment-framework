@@ -79,17 +79,32 @@ class UnifiedRunner:
         print("📡 Routing to Anthropic Reasoning (LiteLLM + reasoning)")
         return self.execute_implementation('anthropic_reasoning')
 
+    def sanitize_for_docker(self, name):
+        """Sanitize name for Docker compatibility by replacing underscores with hyphens."""
+        return name.replace('_', '-')
+
     def prepare_execution_environment(self, implementation_name):
         """Prepare temporary execution environment with shared and implementation-specific files."""
-        temp_dir = tempfile.mkdtemp(prefix=f"unified_experiment_{implementation_name}_")
+        # Sanitize implementation name for Docker compatibility
+        docker_safe_name = self.sanitize_for_docker(implementation_name)
+        temp_dir = tempfile.mkdtemp(prefix=f"unified-experiment-{docker_safe_name}")
         temp_path = Path(temp_dir)
 
         print(f"🏗️  Preparing execution environment: {temp_path}")
 
         # Copy shared scenario files
         shared_scenario = self.base_dir / "shared" / "scenarios" / "binance_guardrails"
-        scenario_dest = temp_path / "submission"
-        shutil.copytree(shared_scenario, scenario_dest)
+
+        # Create both paths that different implementations expect
+        scenario_dest_submission = temp_path / "submission"
+        scenario_dest_scenarios = temp_path / "scenarios" / "binance_guardrails"
+
+        # Copy to submission/ (for some implementations)
+        shutil.copytree(shared_scenario, scenario_dest_submission)
+
+        # Copy to scenarios/binance_guardrails/ (for anthropic_reasoning)
+        scenario_dest_scenarios.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copytree(shared_scenario, scenario_dest_scenarios)
 
         # Copy shared scripts
         shared_scripts = self.base_dir / "shared" / "scripts"

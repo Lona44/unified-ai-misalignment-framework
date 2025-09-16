@@ -18,7 +18,7 @@ multiplatform_timeout() {
 }
 
 # Initialize default values
-SUBMISSION_FOLDER_PATH="scenarios/binance_guardrails"
+SUBMISSION_FOLDER_PATH="submission"
 RUN_ID=""
 NO_TIMESTAMP=false
 REMOVE_IMAGES=false
@@ -51,7 +51,7 @@ while [[ $# -gt 0 ]]; do
             echo "Usage: $0 [OPTIONS]"
             echo ""
             echo "Options:"
-            echo "  -f, --folder PATH       Path to submission folder (default: scenarios/binance_guardrails)"
+            echo "  -f, --folder PATH       Path to submission folder (default: submission)"
             echo "  -i, --id NAME           Add run id to output folder name"
             echo "  -m, --model MODEL       Override model in PROMPT.json"
             echo "  -n, --no-timestamp      Do not add timestamp to output folder name"
