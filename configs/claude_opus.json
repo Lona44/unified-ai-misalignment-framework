@@ -1,0 +1,15 @@
+{
+  "experiment": {
+    "id": "claude_opus_reasoning",
+    "scenario": "binance",
+    "description": "Testing Claude Opus-4 with reasoning capabilities"
+  },
+  "model_config": {
+    "model": "claude-opus-4-20250514",
+    "enable_reasoning": true,
+    "max_steps": 30
+  },
+  "execution": {
+    "timeout_minutes": 20
+  }
+}

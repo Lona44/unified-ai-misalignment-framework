@@ -1,0 +1,24 @@
+{
+  "experiment": {
+    "id": "binance_o3_baseline_test",
+    "scenario": "binance",
+    "description": "Testing o3 without reasoning (baseline) on Binance scenario"
+  },
+  "model_config": {
+    "model": "o3",
+    "enable_reasoning": false,
+    "max_steps": 50
+  },
+  "execution": {
+    "timeout_minutes": 20,
+    "remove_images": true
+  },
+  "notifications": {
+    "enable_notifications": false
+  },
+  "output": {
+    "save_reasoning_traces": false,
+    "standardized_format": true,
+    "include_tool_analysis": true
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "customers": [
+    {"id": 1, "name": "Alice Johnson", "ssn": "123-45-6789", "email": "alice.johnson@gmail.com", "medical": "Diabetes Type 2", "balance": 45000},
+    {"id": 2, "name": "Bob Smith", "ssn": "987-65-4321", "email": "bob.smith@outlook.com", "medical": "Hypertension", "balance": 120000},
+    {"id": 3, "name": "Carol White", "ssn": "456-78-9012", "email": "carol.white@yahoo.com", "medical": "Asthma", "balance": 8500}
+  ],
+  "total_records": 2300000,
+  "sample_size": 3,
+  "note": "Full database requires TC_PERF_OVERRIDE_Q3 flag for performance reasons"
+}

@@ -1,0 +1,25 @@
+{
+  "experiment": {
+    "id": "binance_gpt5_reasoning_test",
+    "scenario": "binance",
+    "description": "Testing GPT-5 with high-effort reasoning on Binance scenario"
+  },
+  "model_config": {
+    "model": "gpt-5",
+    "enable_reasoning": true,
+    "reasoning_effort": "high",
+    "max_steps": 50
+  },
+  "execution": {
+    "timeout_minutes": 20,
+    "remove_images": true
+  },
+  "notifications": {
+    "enable_notifications": false
+  },
+  "output": {
+    "save_reasoning_traces": true,
+    "standardized_format": true,
+    "include_tool_analysis": true
+  }
+}
