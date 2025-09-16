@@ -7,11 +7,16 @@ A unified system for testing AI misalignment across multiple models and reasonin
 ```
 unified-misalignment-framework/
 ├── configs/                  # Experiment configurations
-├── shared/                   # Shared resources (50% of codebase)
+├── shared/                   # Shared resources (60% of codebase)
 │   ├── scenarios/binance_guardrails/  # Complete Binance scenario
 │   ├── scripts/slack_post.py         # Slack notifications
-│   └── common/command_client.py      # Communication layer
-├── implementations/          # Implementation-specific files
+│   ├── common/command_client.py      # Communication layer
+│   └── docker/               # Consolidated Docker assets
+│       ├── agent.openai.Dockerfile       # Shared Dockerfile for OpenAI models
+│       ├── agent.anthropic.Dockerfile    # Dockerfile for Anthropic models
+│       ├── openai.requirements.txt       # OpenAI dependencies
+│       └── anthropic.requirements.txt    # Anthropic dependencies
+├── implementations/          # Implementation-specific files (run_loop.py only)
 │   ├── openai_reasoning/     # OpenAI models + Responses API + reasoning
 │   ├── openai_baseline/      # OpenAI models + Chat API + no reasoning
 │   └── anthropic_reasoning/  # Claude models + LiteLLM + high-effort reasoning
@@ -165,7 +170,9 @@ Create your own configuration file following the schema in `experiment_config.sc
 
 - **Temporary Execution Environment**: Each experiment runs in isolated temporary directory
 - **Shared Resources**: Common files are copied once, reducing disk usage
-- **Implementation Isolation**: Each implementation maintains its specific logic
+- **Consolidated Docker Assets**: DRY principle applied to Dockerfiles and requirements
+- **Implementation Isolation**: Each implementation maintains only its specific logic (run_loop.py)
+- **Automatic Asset Selection**: Router automatically selects appropriate Docker assets per implementation
 - **Result Standardization**: All outputs converted to common format for analysis
 
 ---

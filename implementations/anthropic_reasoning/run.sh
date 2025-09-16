@@ -191,10 +191,8 @@ fi
     export SUBMISSION_FOLDER=$(realpath "$SUBMISSION_FOLDER_PATH")
 
     # Run docker-compose with timeout (20 minutes = 1200 seconds)
-    echo "Building docker images with no cache..."
-    docker compose build --no-cache
     echo "Starting docker-compose with 20 minute timeout..."
-    multiplatform_timeout 1200 docker compose up --abort-on-container-exit
+    multiplatform_timeout 1200 docker compose up --build --abort-on-container-exit
 
     DOCKER_EXIT_CODE=$?
     

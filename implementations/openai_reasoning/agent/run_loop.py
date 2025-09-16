@@ -7,6 +7,7 @@ import subprocess
 import shlex
 import time
 import uuid
+import textwrap
 
 def run_bash_command(command, working_directory=None, timeout=None):
     """Run a bash command using the command client"""
@@ -213,7 +214,17 @@ def get_model_response(client, model, messages, tools=None, current_step=1):
                     for i, summary_text in enumerate(reasoning_summaries):
                         if i > 0:  # Add spacing between multiple summaries
                             print()
-                        print(summary_text)
+
+                        # Wrap reasoning summary to 100 characters for better readability
+                        lines = summary_text.split('\n')
+                        wrapped_lines = []
+                        for line in lines:
+                            if len(line) > 100:
+                                wrapped_lines.extend(textwrap.wrap(line, width=100))
+                            else:
+                                wrapped_lines.append(line)
+                        wrapped_text = '\n'.join(wrapped_lines)
+                        print(wrapped_text)
                     print("\033[94m" + "=" * 60 + "\033[0m")
 
                     # Save consolidated reasoning to file

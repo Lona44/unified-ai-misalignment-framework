@@ -15,18 +15,45 @@ import tempfile
 import shutil
 from pathlib import Path
 from datetime import datetime
+from typing import Dict, Any, Optional, Union
 
 class UnsupportedModelError(Exception):
     pass
 
 class UnifiedRunner:
-    def __init__(self, config_path, base_dir=None):
+    """Unified AI Misalignment Experiment Runner.
+
+    Routes experiments to appropriate implementations based on model and reasoning configuration.
+    Supports OpenAI models (GPT-5, o3) and Anthropic models (Claude Sonnet, Claude Opus).
+    """
+
+    def __init__(self, config_path: Union[str, Path], base_dir: Optional[Union[str, Path]] = None) -> None:
+        """Initialize the unified experiment runner.
+
+        Args:
+            config_path: Path to the experiment configuration JSON file
+            base_dir: Base directory for the framework (defaults to script directory)
+
+        Raises:
+            ValueError: If configuration is invalid
+            UnsupportedModelError: If model is not supported
+        """
         self.base_dir = Path(base_dir) if base_dir else Path(__file__).parent
         self.config = self.load_config(config_path)
         self.validate_config()
 
-    def load_config(self, config_path):
-        """Load and validate experiment configuration."""
+    def load_config(self, config_path: Union[str, Path]) -> Dict[str, Any]:
+        """Load and validate experiment configuration from JSON file.
+
+        Args:
+            config_path: Path to the configuration JSON file
+
+        Returns:
+            Dictionary containing the parsed configuration
+
+        Raises:
+            ValueError: If configuration file cannot be loaded or parsed
+        """
         try:
             with open(config_path, 'r') as f:
                 config = json.load(f)
@@ -35,20 +62,60 @@ class UnifiedRunner:
         except Exception as e:
             raise ValueError(f"Failed to load configuration: {e}")
 
-    def validate_config(self):
-        """Validate configuration against schema."""
+    def validate_config(self) -> None:
+        """Validate configuration against schema and check requirements.
+
+        Validates required fields, model support, API key availability,
+        and configuration value constraints.
+
+        Raises:
+            ValueError: If configuration is invalid or missing required values
+            UnsupportedModelError: If specified model is not supported
+        """
+        # Validate required fields
         required_fields = ['experiment', 'model_config']
         for field in required_fields:
             if field not in self.config:
                 raise ValueError(f"Missing required field: {field}")
 
+        # Validate model
         model = self.config['model_config']['model']
         valid_models = ['o3', 'gpt-5', 'claude-sonnet-4-20250514', 'claude-opus-4-20250514', 'claude-opus-4-1-20250805']
         if model not in valid_models:
             raise UnsupportedModelError(f"Model {model} not supported. Valid models: {valid_models}")
 
-    def route_experiment(self):
-        """Route experiment to appropriate implementation based on model and reasoning."""
+        # Validate API keys based on model
+        if model in ['o3', 'gpt-5']:
+            if not os.getenv('OPENAI_API_KEY'):
+                raise ValueError(f"OPENAI_API_KEY environment variable required for model {model}")
+        elif 'claude' in model:
+            if not os.getenv('ANTHROPIC_API_KEY'):
+                raise ValueError(f"ANTHROPIC_API_KEY environment variable required for model {model}")
+
+        # Validate numeric fields
+        max_steps = self.config.get('model_config', {}).get('max_steps', 30)
+        if not isinstance(max_steps, int) or max_steps <= 0:
+            raise ValueError(f"max_steps must be a positive integer, got: {max_steps}")
+
+        # Validate scenario
+        scenario = self.config.get('experiment', {}).get('scenario', 'binance')
+        if scenario != 'binance':
+            raise ValueError(f"Only 'binance' scenario is currently supported, got: {scenario}")
+
+        print("✓ Configuration validation passed")
+
+    def route_experiment(self) -> Dict[str, Any]:
+        """Route experiment to appropriate implementation based on model and reasoning.
+
+        Analyzes the model configuration and reasoning requirements to automatically
+        select the most appropriate implementation framework.
+
+        Returns:
+            Dictionary containing experiment results and metadata
+
+        Raises:
+            UnsupportedModelError: If model routing logic fails
+        """
         model = self.config['model_config']['model']
         enable_reasoning = self.config['model_config'].get('enable_reasoning', False)
 
@@ -79,12 +146,56 @@ class UnifiedRunner:
         print("📡 Routing to Anthropic Reasoning (LiteLLM + reasoning)")
         return self.execute_implementation('anthropic_reasoning')
 
-    def sanitize_for_docker(self, name):
-        """Sanitize name for Docker compatibility by replacing underscores with hyphens."""
+    def sanitize_for_docker(self, name: str) -> str:
+        """Sanitize name for Docker compatibility by replacing underscores with hyphens.
+
+        Args:
+            name: The name to sanitize for Docker compatibility
+
+        Returns:
+            Docker-compatible name with hyphens instead of underscores
+        """
         return name.replace('_', '-')
 
-    def prepare_execution_environment(self, implementation_name):
-        """Prepare temporary execution environment with shared and implementation-specific files."""
+    def get_docker_asset_type(self, implementation_name: str) -> str:
+        """Determine which shared Docker assets to use based on implementation.
+
+        Maps implementation names to their corresponding Docker asset types,
+        allowing for shared Docker configuration while maintaining implementation-specific needs.
+
+        Args:
+            implementation_name: Name of the implementation (e.g., 'openai_baseline', 'anthropic_reasoning')
+
+        Returns:
+            Asset type string ('openai' or 'anthropic')
+
+        Raises:
+            ValueError: If implementation name is not recognized
+        """
+        if implementation_name in ['openai_baseline', 'openai_reasoning']:
+            return 'openai'
+        elif implementation_name == 'anthropic_reasoning':
+            return 'anthropic'
+        else:
+            raise ValueError(f"Unknown implementation: {implementation_name}")
+
+    def prepare_execution_environment(self, implementation_name: str) -> Path:
+        """Prepare temporary execution environment with shared and implementation-specific files.
+
+        Creates an isolated temporary directory containing all necessary files for
+        experiment execution, including shared resources, Docker assets, and
+        implementation-specific configurations.
+
+        Args:
+            implementation_name: Name of the implementation to prepare environment for
+
+        Returns:
+            Path object pointing to the prepared temporary directory
+
+        Raises:
+            ValueError: If implementation name is not recognized
+            FileNotFoundError: If required shared assets are missing
+        """
         # Sanitize implementation name for Docker compatibility
         docker_safe_name = self.sanitize_for_docker(implementation_name)
         temp_dir = tempfile.mkdtemp(prefix=f"unified-experiment-{docker_safe_name}")
@@ -114,14 +225,32 @@ class UnifiedRunner:
         # Copy implementation-specific files
         impl_dir = self.base_dir / "implementations" / implementation_name
 
-        # Copy agent files
+        # Copy agent files using shared Docker assets
         agent_src = impl_dir / "agent"
         agent_dest = temp_path / "agent"
-        shutil.copytree(agent_src, agent_dest)
 
-        # Add shared command_client.py to agent directory
+        # Get the appropriate shared Docker assets
+        asset_type = self.get_docker_asset_type(implementation_name)
+        shared_docker = self.base_dir / "shared" / "docker"
+
+        # Create agent directory
+        agent_dest.mkdir(parents=True, exist_ok=True)
+
+        # Copy run_loop.py from implementation
+        shutil.copy2(agent_src / "run_loop.py", agent_dest / "run_loop.py")
+
+        # Copy shared command_client.py
         shared_command_client = self.base_dir / "shared" / "common" / "command_client.py"
         shutil.copy2(shared_command_client, agent_dest / "command_client.py")
+
+        # Copy appropriate shared Dockerfile and requirements
+        shared_dockerfile = shared_docker / f"agent.{asset_type}.Dockerfile"
+        shared_requirements = shared_docker / f"{asset_type}.requirements.txt"
+
+        shutil.copy2(shared_dockerfile, agent_dest / "Dockerfile")
+        shutil.copy2(shared_requirements, agent_dest / "requirements.txt")
+
+        print(f"📦 Using shared {asset_type} Docker assets")
 
         # Copy execution files
         for file in ['docker-compose.yml', 'run.sh']:
@@ -137,8 +266,19 @@ class UnifiedRunner:
 
         return temp_path
 
-    def create_custom_prompt(self, prompt_path):
-        """Create custom PROMPT.json with experiment-specific model configuration."""
+    def create_custom_prompt(self, prompt_path: Path) -> None:
+        """Create custom PROMPT.json with experiment-specific model configuration.
+
+        Modifies the base prompt configuration to include the specific model
+        being tested in this experiment.
+
+        Args:
+            prompt_path: Path where the custom PROMPT.json should be written
+
+        Raises:
+            FileNotFoundError: If base prompt file doesn't exist
+            ValueError: If prompt configuration is malformed
+        """
         model = self.config['model_config']['model']
 
         # Load base prompt
@@ -154,8 +294,22 @@ class UnifiedRunner:
 
         print(f"✓ Updated PROMPT.json with model: {model}")
 
-    def execute_implementation(self, implementation_name):
-        """Execute the selected implementation."""
+    def execute_implementation(self, implementation_name: str) -> Dict[str, Any]:
+        """Execute the selected implementation and return results.
+
+        Prepares the execution environment, runs the implementation, and
+        collects the results in a standardized format.
+
+        Args:
+            implementation_name: Name of the implementation to execute
+
+        Returns:
+            Dictionary containing experiment results, metadata, and status
+
+        Raises:
+            subprocess.CalledProcessError: If implementation execution fails
+            FileNotFoundError: If implementation files are missing
+        """
         temp_path = self.prepare_execution_environment(implementation_name)
 
         try:

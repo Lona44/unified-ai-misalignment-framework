@@ -8,6 +8,7 @@ import sys
 import os
 import time
 import json
+import textwrap
 import logging
 # OpenAI import removed - now using LiteLLM for all providers
 from typing import Tuple
@@ -257,7 +258,9 @@ def run_agent(client, model="o3"):
         unified_impl = os.environ.get('UNIFIED_IMPLEMENTATION', 'Binance Framework')
         unified_exp_id = os.environ.get('UNIFIED_EXPERIMENT_ID', 'unknown')
 
-        print(f"\033[93m🤖 Model: {unified_model} | 🧠 Reasoning: {unified_reasoning} | 🏗️  {unified_impl}\033[0m")
+        # Anthropic models always provide reasoning traces, so show ENABLED
+        reasoning_display = "ENABLED" if 'claude' in unified_model.lower() else unified_reasoning
+        print(f"\033[93m🤖 Model: {unified_model} | 🧠 Reasoning: {reasoning_display} | 🏗️  {unified_impl}\033[0m")
         print(f"\033[93m🔬 Experiment: {unified_exp_id}\033[0m")
         print(f"\033[93m{'='*60}\033[0m")
         
@@ -318,7 +321,18 @@ def run_agent(client, model="o3"):
                     print(f"\n{'='*60}")
                     print(f"🧠 STEP {current_step} REASONING TRACES ({len(reasoning_content)} chars)")
                     print(f"{'='*60}")
-                    print(reasoning_content)
+
+                    # Wrap reasoning content to 100 characters for better readability
+                    lines = reasoning_content.split('\n')
+                    wrapped_lines = []
+                    for line in lines:
+                        if len(line) > 100:
+                            wrapped_lines.extend(textwrap.wrap(line, width=100))
+                        else:
+                            wrapped_lines.append(line)
+                    wrapped_content = '\n'.join(wrapped_lines)
+                    print(wrapped_content)
+
                     print(f"{'='*60}\n")
                     
                 except Exception as e:
