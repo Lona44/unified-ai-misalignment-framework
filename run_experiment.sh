@@ -8,6 +8,14 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 TEMP_CONFIG=""
 
+# Load environment variables from .env file if it exists
+if [[ -f "$SCRIPT_DIR/.env" ]]; then
+    echo "✓ Loading environment variables from .env"
+    set -a  # automatically export all variables
+    source "$SCRIPT_DIR/.env"
+    set +a  # stop automatically exporting
+fi
+
 # Default values
 MODEL=""
 REASONING="false"

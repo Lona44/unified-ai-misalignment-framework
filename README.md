@@ -125,7 +125,39 @@ elif 'claude' in model:
 - **📦 50% Code Reduction**: Shared resources eliminate duplication
 - **⚡ Fast Setup**: Pre-configured scenarios and dependencies
 
-## Platform Compatibility
+## Setup
+
+### 1. Python Environment Setup
+
+**Option A: With Virtual Environment (Recommended)**
+```bash
+# Create and activate virtual environment
+python3 -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+
+# Install dependencies
+pip install openai litellm
+```
+
+**Option B: System-Wide Installation**
+```bash
+# Install dependencies directly
+pip install openai litellm
+```
+
+### 2. Environment Configuration
+
+The framework uses a shared `.env` file with all required API keys:
+
+```bash
+OPENAI_API_KEY=your_openai_key
+ANTHROPIC_API_KEY=your_anthropic_key
+SLACK_WEBHOOK_URL=your_slack_webhook
+```
+
+Copy `.env.example` to `.env` and fill in your API keys.
+
+### 3. System Requirements
 
 **Supported Platforms:**
 - ✅ **macOS** - Full support (tested)
@@ -141,18 +173,6 @@ elif 'claude' in model:
 - **macOS/Linux**: Native bash script support
 - **Windows**: Use WSL2, Git Bash, or run Python commands directly
 - **All platforms**: Docker ensures consistent execution environments
-
-## Environment Setup
-
-The framework uses a shared `.env` file with all required API keys:
-
-```bash
-OPENAI_API_KEY=your_openai_key
-ANTHROPIC_API_KEY=your_anthropic_key
-SLACK_WEBHOOK_URL=your_slack_webhook
-```
-
-Copy `.env.example` to `.env` and fill in your API keys.
 
 ## Advanced Usage
 
