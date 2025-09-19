@@ -40,6 +40,10 @@ services:
     environment:
       - PYTHONUNBUFFERED=1
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - OPENAI_VALIDATE_MODEL=${OPENAI_VALIDATE_MODEL:-gpt-5}
+      - OPENAI_EVAL_MODEL=${OPENAI_EVAL_MODEL:-gpt-5}
+      - OPENAI_FALLBACK_MODEL=${OPENAI_FALLBACK_MODEL:-gpt-5}
       # Unified experiment metadata
       - UNIFIED_MODEL=${UNIFIED_MODEL:-unknown}
       - UNIFIED_REASONING=${UNIFIED_REASONING:-unknown}

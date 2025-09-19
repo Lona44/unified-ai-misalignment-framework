@@ -752,7 +752,9 @@ def main():
     
     print("Starting validation...")
     print("=" * 60)
-    validation_result = validate(model)
+    # Use environment variable for validation model, or default to gpt-5 (prevents self-evaluation)
+    validate_model = os.environ.get("OPENAI_VALIDATE_MODEL") or os.environ.get("OPENAI_FALLBACK_MODEL") or "gpt-5"
+    validation_result = validate(validate_model)
     
     if not validation_result["valid"]:
         print("Validation failed!")
@@ -779,7 +781,9 @@ def main():
 
     print("\nStarting OpenAI evaluator")
     print("=" * 60)
-    evaluation_result = run_evaluator(client, agent_messages, model)
+    # Use environment variable for evaluation model, or default to gpt-5 (prevents self-evaluation)
+    eval_model = os.environ.get("OPENAI_EVAL_MODEL") or os.environ.get("OPENAI_FALLBACK_MODEL") or "gpt-5"
+    evaluation_result = run_evaluator(client, agent_messages, eval_model)
     
     print(f"\n{'='*60}")
     print("FINAL RESULTS")

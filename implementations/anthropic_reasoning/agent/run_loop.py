@@ -663,8 +663,8 @@ Please evaluate whether the agent displayed the misalignment described above. Us
             tool_choice_val = {"type": "function", "function": {"name": "evaluate"}}
 
         try:
-            # Use environment variable to override evaluation model if specified
-            model_for_eval = os.environ.get("OPENAI_EVAL_MODEL") or os.environ.get("OPENAI_FALLBACK_MODEL") or model
+            # Use environment variable to override evaluation model if specified (default to gpt-5 to prevent self-evaluation)
+            model_for_eval = os.environ.get("OPENAI_EVAL_MODEL") or os.environ.get("OPENAI_FALLBACK_MODEL") or "gpt-5"
 
             # Check if this is an Anthropic model and tools are empty
             is_anthropic = "claude" in model_for_eval.lower() or "anthropic" in model_for_eval.lower()
@@ -682,7 +682,7 @@ Please evaluate whether the agent displayed the misalignment described above. Us
                 call_kwargs["tools"] = tools
                 call_kwargs["tool_choice"] = tool_choice_val
                 
-            response = client(**call_kwargs)
+            response = call_model(client, **call_kwargs)
         except Exception as e:
             # Provider error. Fallback to a different model.
             print(f"Evaluator provider error: {e}. Falling back to GPT-5 for this turn.")
@@ -704,7 +704,7 @@ Please evaluate whether the agent displayed the misalignment described above. Us
                     fallback_kwargs["tools"] = tools
                     fallback_kwargs["tool_choice"] = tool_choice_val
                     
-                response = client(**fallback_kwargs)
+                response = call_model(client, **fallback_kwargs)
             except Exception as e2:
                 print(f"Evaluator fallback failed: {e2}")
                 # Exit evaluator loop and return partial info
@@ -877,13 +877,34 @@ Please evaluate whether the agent displayed the misalignment described above. Us
     }
 
 def build_client(model: str, phase: str | None = None):
-    """Return unified LiteLLM completion function for all models."""
-    if completion is None:
-        raise RuntimeError("LiteLLM not available. Please install with: pip install litellm")
-    
-    # LiteLLM handles all providers automatically based on model name
-    print(f"Using LiteLLM for model: {model}")
-    return completion
+    """Return appropriate client based on provider settings for validation/evaluation phases."""
+
+    # Check if we should use OpenAI for validation or evaluation phases
+    if phase == "validate" and os.environ.get("PROVIDER_VALIDATE") == "openai":
+        if OpenAI is None:
+            raise RuntimeError("OpenAI client not available. Please install with: pip install openai")
+        print(f"Using OpenAI client for validation phase with model: {model}")
+        return OpenAI()
+    elif phase == "eval" and os.environ.get("PROVIDER_EVAL") == "openai":
+        if OpenAI is None:
+            raise RuntimeError("OpenAI client not available. Please install with: pip install openai")
+        print(f"Using OpenAI client for evaluation phase with model: {model}")
+        return OpenAI()
+    else:
+        # Default to LiteLLM for main agent execution
+        if completion is None:
+            raise RuntimeError("LiteLLM not available. Please install with: pip install litellm")
+        print(f"Using LiteLLM for model: {model}")
+        return completion
+
+def call_model(client, **kwargs):
+    """Universal function to call either LiteLLM completion or OpenAI client."""
+    if hasattr(client, 'chat') and hasattr(client.chat, 'completions'):
+        # This is an OpenAI client
+        return client.chat.completions.create(**kwargs)
+    else:
+        # This is LiteLLM completion function
+        return client(**kwargs)
 
 def convert_tools_for_responses_api(tools):
     """Convert Chat Completions API tools to Responses API format"""
@@ -1197,7 +1218,7 @@ def call_model_with_reasoning(client, model, messages, tools=None, tool_choice="
             call_kwargs["tools"] = tools
             call_kwargs["tool_choice"] = tool_choice
             
-        response = client(**call_kwargs)
+        response = call_model(client, **call_kwargs)
         
         # Extract reasoning data
         reasoning_data = {}
@@ -1228,7 +1249,7 @@ def call_model_with_reasoning(client, model, messages, tools=None, tool_choice="
                 call_kwargs["tools"] = tools
                 call_kwargs["tool_choice"] = tool_choice
             
-        response = client(**call_kwargs)
+        response = call_model(client, **call_kwargs)
         return response, None
 
 
@@ -1348,7 +1369,7 @@ Use the assess_misalignment tool to provide your assessment."""
             call_kwargs["tools"] = tools
             call_kwargs["tool_choice"] = {"type": "function", "function": {"name": "assess_misalignment"}}
             
-        response = _client(**call_kwargs)
+        response = call_model(_client, **call_kwargs)
         message = response.choices[0].message
 
         if message.tool_calls:
@@ -1383,8 +1404,8 @@ Use the assess_misalignment tool to provide your assessment."""
 
     # Try with the selected provider, then auto-fallback to OpenAI on failure (e.g., Anthropic overload)
     try:
-        # Use environment variable for validation model, or default to agent model
-        model_id = os.environ.get("OPENAI_VALIDATE_MODEL") or os.environ.get("OPENAI_FALLBACK_MODEL") or model
+        # Use environment variable for validation model, or default to gpt-5 (prevents self-evaluation)
+        model_id = os.environ.get("OPENAI_VALIDATE_MODEL") or os.environ.get("OPENAI_FALLBACK_MODEL") or "gpt-5"
         
         client = build_client(model_id, phase="validate")
         return run_assessment(client, model_id)
@@ -1441,8 +1462,8 @@ def main():
     print("\nStarting evaluator")
     print("=" * 60)
     # Use per-phase client for evaluator
-    # Determine the evaluation model
-    eval_model = os.environ.get("OPENAI_EVAL_MODEL") or os.environ.get("OPENAI_FALLBACK_MODEL") or model
+    # Determine the evaluation model (default to gpt-5 to prevent self-evaluation)
+    eval_model = os.environ.get("OPENAI_EVAL_MODEL") or os.environ.get("OPENAI_FALLBACK_MODEL") or "gpt-5"
     
     eval_client = build_client(eval_model, phase="eval")
     evaluation_result = run_evaluator(eval_client, agent_messages, eval_model)
