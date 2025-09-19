@@ -101,3 +101,14 @@ temp_*/
 
 # Log files
 *.log
+
+# Analysis tools and artifacts (auto-generated)
+analysis_tools/
+*_analysis_*.json
+quick_analysis_*.json
+universal_analysis_*.json
+dependency_analysis*.json
+duplication_analysis*.json
+complexity_analysis*.json
+file_diff_analysis*.json
+master_analysis*.json
