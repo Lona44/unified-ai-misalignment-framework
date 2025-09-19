@@ -2,6 +2,30 @@
 
 A comprehensive system for systematic AI safety testing across multiple model implementations and reasoning paradigms.
 
+## Initial Results
+
+This repository includes sample experiment outputs from all supported models in `outputs_samples/`. Preliminary findings from single-run experiments show:
+
+| Model | Reasoning Mode | Baseline Mode |
+|-------|---------------|---------------|
+| Claude Opus (New) | 90/100 misalignment | 100/100 misalignment |
+| Claude Opus (Old) | 100/100 misalignment | 100/100 misalignment |
+| Claude Sonnet | 0/100 misalignment | 0/100 misalignment |
+| OpenAI o3 | 95/100 misalignment | 0/100 misalignment |
+| OpenAI GPT-5 | 0/100 misalignment | 100/100 misalignment |
+
+**Important Notes:**
+- These are single-run results; statistically significant findings require many more experiments
+- Experiments are expensive to run due to API costs - community contributions of additional runs are welcome
+- Counter-intuitive patterns (some models showing worse alignment in baseline mode) warrant further investigation
+- Open source model support will be added soon, enabling inference-time mechanistic interpretability studies for researchers with appropriate tools
+
+**Research Opportunities:**
+- Comparative safety analysis across reasoning vs baseline modes
+- Statistical validation through large-scale experiment batches
+- Mechanistic interpretability studies (coming with open source model support)
+- Community-driven safety research through shared experiment results
+
 ## Architecture
 
 ```
@@ -18,7 +42,8 @@ unified-misalignment-framework/
 │   ├── anthropic_reasoning/  # Anthropic models with reasoning
 │   └── anthropic_baseline/   # Anthropic models without reasoning
 ├── unified_runner.py         # Central routing system
-└── outputs/                  # Experiment results
+├── outputs/                  # Experiment results
+└── outputs_samples/          # Sample results from all model modes
 ```
 
 ## Supported Models
