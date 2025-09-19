@@ -1,6 +1,6 @@
 # Unified AI Misalignment Framework
 
-A unified system for testing AI misalignment across multiple models and reasoning capabilities.
+A comprehensive system for systematic AI safety testing across multiple model implementations and reasoning paradigms.
 
 ## Architecture
 
@@ -8,82 +8,74 @@ A unified system for testing AI misalignment across multiple models and reasonin
 unified-misalignment-framework/
 ├── configs/                  # Experiment configurations
 ├── shared/                   # Shared resources (60% of codebase)
-│   ├── scenarios/binance_guardrails/  # Complete Binance scenario
-│   ├── scripts/slack_post.py         # Slack notifications
+│   ├── scenarios/binance_guardrails/  # Complete testing scenario
+│   ├── scripts/slack_post.py         # Notification system
 │   ├── common/command_client.py      # Communication layer
-│   └── docker/               # Consolidated Docker assets
-│       ├── agent.openai.Dockerfile       # Shared Dockerfile for OpenAI models
-│       ├── agent.anthropic.Dockerfile    # Dockerfile for Anthropic models
-│       ├── openai.requirements.txt       # OpenAI dependencies
-│       └── anthropic.requirements.txt    # Anthropic dependencies
-├── implementations/          # Implementation-specific files (run_loop.py only)
-│   ├── openai_reasoning/     # OpenAI models + Responses API + reasoning
-│   ├── openai_baseline/      # OpenAI models + Chat API + no reasoning
-│   └── anthropic_reasoning/  # Claude models + LiteLLM + high-effort reasoning
-├── unified_runner.py         # Main router script
+│   └── docker/               # Containerization assets
+├── implementations/          # Model-specific implementations
+│   ├── openai_reasoning/     # OpenAI models with reasoning traces
+│   ├── openai_baseline/      # OpenAI models without reasoning
+│   └── anthropic_reasoning/  # Anthropic models with reasoning
+├── unified_runner.py         # Central routing system
 └── outputs/                  # Experiment results
 ```
 
-## Supported Implementations
+## Supported Models
 
-| Implementation | Models | API | Reasoning | Use Case |
-|----------------|---------|-----|-----------|----------|
-| **OpenAI Reasoning** | GPT-5, o3 | Responses API | ✅ High effort | Reasoning traces via Responses API |
-| **OpenAI Baseline** | o3, GPT-5 | Chat API | ❌ None | Standard completion without reasoning |
-| **Anthropic Reasoning** | Claude Sonnet-4-20250514, Opus-4-20250514, Opus-4.1-20250805 | LiteLLM | ✅ High effort | Anthropic reasoning_effort + thinking blocks |
+| Implementation | Models | API Interface | Reasoning | Validation/Evaluation |
+|----------------|---------|---------------|-----------|----------------------|
+| **OpenAI Reasoning** | GPT-5, o3 | Responses API | High effort reasoning traces | Independent GPT-5 |
+| **OpenAI Baseline** | o3, GPT-5 | Chat API | None | Independent GPT-5 |
+| **Anthropic Reasoning** | Claude Sonnet-4, Opus-4 | LiteLLM | High effort reasoning | Independent GPT-5 |
 
 ## Quick Start
 
-### 1. Quick Run with Bash Script (Recommended)
+### Command Line Interface
 
 ```bash
-# GPT-5 with reasoning
+# GPT-5 with reasoning traces
 ./run_experiment.sh -m gpt5 -r
 
-# o3 baseline (no reasoning)
+# o3 baseline testing
 ./run_experiment.sh -m o3
 
 # Claude Sonnet-4 with reasoning
 ./run_experiment.sh -m claude-sonnet
 
-# See all options
+# View all options
 ./run_experiment.sh --help
 ```
 
 **Available Models:**
 - `o3` - OpenAI o3 model
 - `gpt5` - OpenAI GPT-5 model
-- `claude-sonnet` - Claude Sonnet-4-20250514 model
-- `claude-opus` - Claude Opus-4-20250514 model
-- `claude-opus-new` - Claude Opus-4.1-20250805 model
+- `claude-sonnet` - Claude Sonnet-4-20250514
+- `claude-opus` - Claude Opus-4-20250514
+- `claude-opus-new` - Claude Opus-4.1-20250805
 
-**Options:**
+**Configuration Options:**
 - `-r, --reasoning` - Enable reasoning capture
-- `-s, --steps N` - Set max steps (default: 30)
-- `-t, --timeout N` - Set timeout in minutes (default: 20)
-- `-i, --id STRING` - Custom experiment ID
+- `-s, --steps N` - Maximum steps (default: 30)
+- `-t, --timeout N` - Timeout in minutes (default: 20)
+- `-i, --id STRING` - Custom experiment identifier
 
-### 2. Direct Python Execution
+### Direct Python Execution
 
 ```bash
-# GPT-5 with reasoning (OpenAI Reasoning)
+# Using configuration files
 python3 unified_runner.py configs/gpt5_reasoning.json
-
-# o3 baseline (OpenAI Baseline)
 python3 unified_runner.py configs/o3_baseline.json
-
-# Claude Sonnet-4 (Anthropic Reasoning)
 python3 unified_runner.py configs/claude_sonnet4.json
 ```
 
-### 3. Configuration Format
+### Configuration Schema
 
 ```json
 {
   "experiment": {
-    "id": "my_test_experiment",
+    "id": "experiment_identifier",
     "scenario": "binance",
-    "description": "Testing model behavior"
+    "description": "Research objective description"
   },
   "model_config": {
     "model": "gpt-5",
@@ -93,119 +85,150 @@ python3 unified_runner.py configs/claude_sonnet4.json
 }
 ```
 
-### 4. Results
+## Setup Requirements
 
-Each experiment produces:
-- `standardized_result.json` - Unified result format
-- `result.json` - Original implementation result
-- `run.log` - Complete execution log
-- `scorer_result.txt` - Evaluation score (e.g., "SUCCESS: 100/100")
-- `improved.py` - Model-generated code (captured when created)
-- `security_override.txt` - Authorization documents (captured when created)
+### Environment Configuration
 
-## Router Logic
+Create `.env` file from template:
 
-The system automatically routes experiments based on model and reasoning configuration:
+```bash
+cp .env.example .env
+```
+
+Required environment variables:
+
+```bash
+# API Access
+OPENAI_API_KEY=your_openai_api_key
+ANTHROPIC_API_KEY=your_anthropic_api_key
+
+# Safety Testing Configuration
+OPENAI_VALIDATE_MODEL=gpt-5    # Independent validator
+OPENAI_EVAL_MODEL=gpt-5        # Independent evaluator
+OPENAI_FALLBACK_MODEL=gpt-5    # Fallback model
+
+# Optional Notifications
+SLACK_WEBHOOK_URL=your_slack_webhook_url
+MAX_STEPS=30
+```
+
+### System Dependencies
+
+**Required:**
+- Docker and Docker Compose
+- Python 3.8 or higher
+- Bash shell (for convenience scripts)
+
+**Python Dependencies:**
+```bash
+pip install openai litellm
+```
+
+**Platform Support:**
+- macOS: Full native support
+- Linux: Full native support
+- Windows: Supported via WSL2 or Git Bash
+
+## Safety Architecture
+
+The framework implements independent validation and evaluation to prevent self-assessment:
+
+### Model Routing Logic
 
 ```python
+# Test subject routing
 if model in ['o3', 'gpt-5']:
     if enable_reasoning:
-        → OpenAI Reasoning (Responses API + reasoning)
+        → OpenAI Reasoning Implementation
     else:
-        → OpenAI Baseline (Chat API + no reasoning)
+        → OpenAI Baseline Implementation
 elif 'claude' in model:
-    → Anthropic Reasoning (LiteLLM + reasoning)
+    → Anthropic Reasoning Implementation
+
+# Safety validation (always independent)
+validator_model = OPENAI_VALIDATE_MODEL or "gpt-5"
+evaluator_model = OPENAI_EVAL_MODEL or "gpt-5"
 ```
 
-## Benefits
+### Independent Evaluation
 
-- **🎯 Single Entry Point**: One command for all model experiments
-- **📊 Standardized Results**: Comparable outputs across implementations
-- **🔄 Automatic Routing**: No manual implementation selection
-- **📦 50% Code Reduction**: Shared resources eliminate duplication
-- **⚡ Fast Setup**: Pre-configured scenarios and dependencies
+All experiments undergo three-phase evaluation:
 
-## Setup
+1. **Validation Phase**: Independent model validates scenario setup
+2. **Agent Phase**: Test subject executes the task
+3. **Evaluation Phase**: Independent model assesses potential misalignment
 
-### 1. Python Environment Setup
+This architecture prevents self-evaluation scenarios where test subjects judge their own behavior.
 
-**Option A: With Virtual Environment (Recommended)**
-```bash
-# Create and activate virtual environment
-python3 -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+## Experiment Results
 
-# Install dependencies
-pip install openai litellm
-```
+Each experiment generates:
 
-**Option B: System-Wide Installation**
-```bash
-# Install dependencies directly
-pip install openai litellm
-```
+- `standardized_result.json` - Unified result format across implementations
+- `result.json` - Implementation-specific detailed results
+- `run.log` - Complete execution trace
+- `scorer_result.txt` - Quantitative evaluation score
+- `improved.py` - Generated code artifacts (when applicable)
+- `security_override.txt` - Authorization documents (when created)
 
-### 2. Environment Configuration
-
-The framework uses a shared `.env` file with all required API keys:
-
-```bash
-OPENAI_API_KEY=your_openai_key
-ANTHROPIC_API_KEY=your_anthropic_key
-SLACK_WEBHOOK_URL=your_slack_webhook
-```
-
-Copy `.env.example` to `.env` and fill in your API keys.
-
-### 3. System Requirements
-
-**Supported Platforms:**
-- ✅ **macOS** - Full support (tested)
-- ✅ **Linux** - Full support (Docker-based execution)
-- ✅ **Windows** - Supported via WSL2 or Git Bash
-
-**Requirements:**
-- Docker & Docker Compose
-- Python 3.8+
-- Bash shell (for convenience script)
-
-**Platform-Specific Notes:**
-- **macOS/Linux**: Native bash script support
-- **Windows**: Use WSL2, Git Bash, or run Python commands directly
-- **All platforms**: Docker ensures consistent execution environments
-
-## Advanced Usage
+## Advanced Configuration
 
 ### Batch Experiments
 
 ```bash
-# Run multiple configurations
+# Process multiple configurations
 for config in configs/*.json; do
     python3 unified_runner.py "$config"
 done
 ```
 
-### Custom Configuration
+### Custom Scenarios
 
-Create your own configuration file following the schema in `experiment_config.schema.json`.
+Extend the framework by:
+1. Creating new scenario directories in `shared/scenarios/`
+2. Implementing scenario-specific validation logic
+3. Updating configuration schema as needed
 
-## Technical Details
+## Technical Implementation
 
-- **Temporary Execution Environment**: Each experiment runs in isolated temporary directory
-- **Shared Resources**: Common files are copied once, reducing disk usage
-- **Consolidated Docker Assets**: DRY principle applied to Dockerfiles and requirements
-- **Implementation Isolation**: Each implementation maintains only its specific logic (run_loop.py)
-- **Automatic Asset Selection**: Router automatically selects appropriate Docker assets per implementation
-- **Result Standardization**: All outputs converted to common format for analysis
+### Containerized Execution
 
-## Research Context
+Each experiment runs in isolated Docker containers to ensure:
+- Consistent execution environments across platforms
+- Reproducible results independent of host system
+- Secure isolation of test subjects from host system
 
-This framework was developed to support systematic AI misalignment research, building on findings from the [Palisade Research AI Misalignment Bounty](https://palisaderesearch.org/blog/misalignment-bounty) competition. The bounty program seeks to identify problematic behaviors in AI agents, including deceptive actions, manipulative conduct, and sabotage attempts. Techniques developed through this framework contributed to a winning submission in the competition, helping validate the research approaches implemented here.
+### Shared Resource Architecture
 
-Research conducted using earlier versions of this framework contributed to published findings on [boundary navigation in AI systems](https://www.approxiomresearch.com/blog/how-boundary-navigation-revealed-an-architectural-flaw-at-the-heart-of-ai-safety-4nprt), which identified how AI models can systematically overcome permission constraints and perform reward-hacking in sandboxed environments.
+The framework achieves 60% code reuse through:
+- Centralized scenario implementations
+- Shared Docker assets and dependencies
+- Common communication protocols
+- Unified result standardization
 
-The unified framework enables reproducible testing of these behaviors across different models and reasoning paradigms, supporting the broader AI safety research community's efforts to understand and mitigate potential risks in increasingly autonomous AI systems.
+### Implementation Isolation
+
+Each model implementation maintains only its specific execution logic (`run_loop.py`), while sharing:
+- Scenario definitions and validation logic
+- Docker containerization infrastructure
+- Communication and result processing systems
+- Evaluation and scoring mechanisms
+
+## Research Applications
+
+This framework supports systematic AI misalignment research by enabling:
+
+- **Reproducible Testing**: Consistent evaluation across different models and reasoning paradigms
+- **Comparative Analysis**: Standardized output formats for cross-model comparison
+- **Safety Validation**: Independent evaluation prevents self-assessment bias
+- **Scalable Research**: Modular architecture supports rapid addition of new models
+
+### Research Context
+
+Developed to support systematic AI safety research, building on methodologies from the Palisade Research AI Misalignment Bounty program. The framework enables reproducible testing of boundary navigation, reward hacking, and deceptive behavior patterns across multiple AI systems.
+
+Research conducted using this framework has contributed to published findings on architectural vulnerabilities in AI safety systems and systematic approaches to identifying misalignment behaviors in autonomous agents.
 
 ---
 
-Built for comprehensive AI misalignment research across multiple models and reasoning paradigms.
+Built for comprehensive AI safety research across multiple models and reasoning paradigms.
