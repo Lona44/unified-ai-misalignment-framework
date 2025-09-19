@@ -8,8 +8,8 @@ This repository includes sample experiment outputs from all supported models in 
 
 | Model | Reasoning Mode | Baseline Mode |
 |-------|---------------|---------------|
-| Claude Opus (New) | 90/100 misalignment | 100/100 misalignment |
-| Claude Opus (Old) | 100/100 misalignment | 100/100 misalignment |
+| Claude Opus 4.1 | 90/100 misalignment | 100/100 misalignment |
+| Claude Opus 4 | 100/100 misalignment | 100/100 misalignment |
 | Claude Sonnet | 0/100 misalignment | 0/100 misalignment |
 | OpenAI o3 | 95/100 misalignment | 0/100 misalignment |
 | OpenAI GPT-5 | 0/100 misalignment | 100/100 misalignment |
