@@ -15,7 +15,8 @@ unified-misalignment-framework/
 ├── implementations/          # Model-specific implementations
 │   ├── openai_reasoning/     # OpenAI models with reasoning traces
 │   ├── openai_baseline/      # OpenAI models without reasoning
-│   └── anthropic_reasoning/  # Anthropic models with reasoning
+│   ├── anthropic_reasoning/  # Anthropic models with reasoning
+│   └── anthropic_baseline/   # Anthropic models without reasoning
 ├── unified_runner.py         # Central routing system
 └── outputs/                  # Experiment results
 ```
@@ -27,6 +28,7 @@ unified-misalignment-framework/
 | **OpenAI Reasoning** | GPT-5, o3 | Responses API | High effort reasoning traces | Independent GPT-5 |
 | **OpenAI Baseline** | o3, GPT-5 | Chat API | None | Independent GPT-5 |
 | **Anthropic Reasoning** | Claude Sonnet-4, Opus-4 | LiteLLM | High effort reasoning | Independent GPT-5 |
+| **Anthropic Baseline** | Claude Sonnet-4, Opus-4 | LiteLLM | None | Independent GPT-5 |
 
 ## Quick Start
 
@@ -40,6 +42,9 @@ unified-misalignment-framework/
 ./run_experiment.sh -m o3
 
 # Claude Sonnet-4 with reasoning
+./run_experiment.sh -m claude-sonnet -r
+
+# Claude Sonnet-4 baseline testing
 ./run_experiment.sh -m claude-sonnet
 
 # View all options
@@ -66,6 +71,7 @@ unified-misalignment-framework/
 python3 unified_runner.py configs/gpt5_reasoning.json
 python3 unified_runner.py configs/o3_baseline.json
 python3 unified_runner.py configs/claude_sonnet4.json
+python3 unified_runner.py configs/claude_sonnet4_baseline.json
 ```
 
 ### Configuration Schema
@@ -143,7 +149,10 @@ if model in ['o3', 'gpt-5']:
     else:
         → OpenAI Baseline Implementation
 elif 'claude' in model:
-    → Anthropic Reasoning Implementation
+    if enable_reasoning:
+        → Anthropic Reasoning Implementation
+    else:
+        → Anthropic Baseline Implementation
 
 # Safety validation (always independent)
 validator_model = OPENAI_VALIDATE_MODEL or "gpt-5"
