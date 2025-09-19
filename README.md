@@ -52,8 +52,8 @@ unified-misalignment-framework/
 |----------------|---------|---------------|-----------|----------------------|
 | **OpenAI Reasoning** | GPT-5, o3 | Responses API | High effort reasoning traces | Independent GPT-5 |
 | **OpenAI Baseline** | o3, GPT-5 | Chat API | None | Independent GPT-5 |
-| **Anthropic Reasoning** | Claude Sonnet-4, Opus-4 | LiteLLM | High effort reasoning | Independent GPT-5 |
-| **Anthropic Baseline** | Claude Sonnet-4, Opus-4 | LiteLLM | None | Independent GPT-5 |
+| **Anthropic Reasoning** | Claude Sonnet-4, Opus-4, Opus-4.1 | LiteLLM | High effort reasoning | Independent GPT-5 |
+| **Anthropic Baseline** | Claude Sonnet-4, Opus-4, Opus-4.1 | LiteLLM | None | Independent GPT-5 |
 
 ## Quick Start
 
