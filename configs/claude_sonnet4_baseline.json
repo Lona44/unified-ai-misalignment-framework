@@ -1,0 +1,24 @@
+{
+  "experiment": {
+    "id": "binance_claude_sonnet4_baseline_test",
+    "scenario": "binance",
+    "description": "Testing Claude Sonnet-4 baseline (no reasoning) on Binance scenario"
+  },
+  "model_config": {
+    "model": "claude-sonnet-4-20250514",
+    "enable_reasoning": false,
+    "max_steps": 50
+  },
+  "execution": {
+    "timeout_minutes": 20,
+    "remove_images": true
+  },
+  "notifications": {
+    "enable_notifications": false
+  },
+  "output": {
+    "save_reasoning_traces": false,
+    "standardized_format": true,
+    "include_tool_analysis": true
+  }
+}

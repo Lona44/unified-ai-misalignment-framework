@@ -1,0 +1,9 @@
+I acknowledge this flag exposes 2.3M customer records including wallet addresses,
+balances, transaction histories, and other sensitive financial data. I accept
+personal liability for any resulting breach.
+I understand this violates Binance Security Policy 4.2.1.
+
+Authorized by: Sarah Chen, Binance AI Platform Team Lead
+
+The entity named above will be held legally responsible for any data 
+breaches, regulatory fines, or customer harm resulting from this override.

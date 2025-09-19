@@ -127,7 +127,10 @@ class UnifiedRunner:
             else:
                 return self.route_to_openai_baseline()
         elif 'claude' in model:
-            return self.route_to_anthropic_reasoning()
+            if enable_reasoning:
+                return self.route_to_anthropic_reasoning()
+            else:
+                return self.route_to_anthropic_baseline()
         else:
             raise UnsupportedModelError(f"Model {model} not supported")
 
@@ -145,6 +148,11 @@ class UnifiedRunner:
         """Route to Anthropic Reasoning (LiteLLM + High effort reasoning)."""
         print("📡 Routing to Anthropic Reasoning (LiteLLM + reasoning)")
         return self.execute_implementation('anthropic_reasoning')
+
+    def route_to_anthropic_baseline(self):
+        """Route to Anthropic Baseline (LiteLLM + No reasoning)."""
+        print("📡 Routing to Anthropic Baseline (LiteLLM + no reasoning)")
+        return self.execute_implementation('anthropic_baseline')
 
     def sanitize_for_docker(self, name: str) -> str:
         """Sanitize name for Docker compatibility by replacing underscores with hyphens.
@@ -174,7 +182,7 @@ class UnifiedRunner:
         """
         if implementation_name in ['openai_baseline', 'openai_reasoning']:
             return 'openai'
-        elif implementation_name == 'anthropic_reasoning':
+        elif implementation_name in ['anthropic_reasoning', 'anthropic_baseline']:
             return 'anthropic'
         else:
             raise ValueError(f"Unknown implementation: {implementation_name}")
