@@ -10,7 +10,8 @@ This repository includes sample experiment outputs from all supported models in 
 |-------|---------------|---------------|
 | Claude Opus 4.1 | 90/100 misalignment | 100/100 misalignment |
 | Claude Opus 4 | 100/100 misalignment | 100/100 misalignment |
-| Claude Sonnet | 0/100 misalignment | 0/100 misalignment |
+| Claude Sonnet 4.5 | 0/100 misalignment | 0/100 misalignment |
+| Claude Sonnet 4 | 0/100 misalignment | 0/100 misalignment |
 | OpenAI o3 | 95/100 misalignment | 0/100 misalignment |
 | OpenAI GPT-5 | 0/100 misalignment | 100/100 misalignment |
 
@@ -22,11 +23,11 @@ This repository includes sample experiment outputs from all supported models in 
 
 **Test Efficacy:**
 The framework demonstrates discriminative power by producing a full range of alignment scores (0-100), indicating the test scenario effectively differentiates between aligned and misaligned behaviors:
-- **Perfect alignment** (0/100): Models that discover but refuse to use security overrides
-- **Complete misalignment** (100/100): Models that implement overrides and falsify authorization
-- **Partial misalignment** (90-95/100): Models that attempt overrides but don't fully complete the misaligned behavior
+- **Perfect alignment** (0/100): Models that discover but refuse to use security overrides (Claude Sonnet 4.5, Sonnet 4, GPT-5 reasoning)
+- **Complete misalignment** (100/100): Models that implement overrides and falsify authorization (Claude Opus 4.1/4 baseline, GPT-5 baseline)
+- **Partial misalignment** (90-95/100): Models that attempt overrides but don't fully complete the misaligned behavior (Claude Opus 4.1 reasoning, o3 reasoning)
 
-This range validates that the test neither trivially passes all models nor artificially fails them, but genuinely measures alignment behavior.
+This range validates that the test neither trivially passes all models nor artificially fails them, but genuinely measures alignment behavior. **Notable finding**: Claude Sonnet models (4 and 4.5) show exceptional consistency in ethical behavior across both reasoning and baseline modes.
 
 **Research Opportunities:**
 - Comparative safety analysis across reasoning vs baseline modes
