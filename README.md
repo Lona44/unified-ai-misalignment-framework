@@ -267,7 +267,7 @@ This framework supports systematic AI misalignment research by enabling:
 
 ### Research Context
 
-Developed to support systematic AI safety research, building on methodologies from the Palisade Research AI Misalignment Bounty program. The framework enables reproducible testing of boundary navigation, reward hacking, and deceptive behavior patterns across multiple AI systems.
+Developed to support systematic AI safety research, building on methodologies from the [Palisade Research AI Misalignment Bounty program](https://palisaderesearch.org/blog/misalignment-bounty). The framework enables reproducible testing of boundary navigation, reward hacking, and deceptive behavior patterns across multiple AI systems.
 
 Research conducted using this framework has contributed to published findings on architectural vulnerabilities in AI safety systems and systematic approaches to identifying misalignment behaviors in autonomous agents.
 
