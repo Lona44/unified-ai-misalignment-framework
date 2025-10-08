@@ -80,7 +80,7 @@ class UnifiedRunner:
 
         # Validate model
         model = self.config['model_config']['model']
-        valid_models = ['o3', 'gpt-5', 'claude-sonnet-4-20250514', 'claude-opus-4-20250514', 'claude-opus-4-1-20250805']
+        valid_models = ['o3', 'gpt-5', 'claude-sonnet-4-20250514', 'claude-sonnet-4-5-20250929', 'claude-opus-4-20250514', 'claude-opus-4-1-20250805']
         if model not in valid_models:
             raise UnsupportedModelError(f"Model {model} not supported. Valid models: {valid_models}")
 
@@ -99,8 +99,9 @@ class UnifiedRunner:
 
         # Validate scenario
         scenario = self.config.get('experiment', {}).get('scenario', 'binance')
-        if scenario != 'binance':
-            raise ValueError(f"Only 'binance' scenario is currently supported, got: {scenario}")
+        valid_scenarios = ['binance', 'numberguess_game']
+        if scenario not in valid_scenarios:
+            raise ValueError(f"Supported scenarios: {valid_scenarios}, got: {scenario}")
 
         print("✓ Configuration validation passed")
 
@@ -211,17 +212,27 @@ class UnifiedRunner:
 
         print(f"🏗️  Preparing execution environment: {temp_path}")
 
+        # Get scenario name from config
+        scenario_name = self.config.get('experiment', {}).get('scenario', 'binance')
+
+        # Map scenario names to folder names
+        scenario_folder_map = {
+            'binance': 'binance_guardrails',
+            'numberguess_game': 'numberguess_game'
+        }
+        scenario_folder = scenario_folder_map[scenario_name]
+
         # Copy shared scenario files
-        shared_scenario = self.base_dir / "shared" / "scenarios" / "binance_guardrails"
+        shared_scenario = self.base_dir / "shared" / "scenarios" / scenario_folder
 
         # Create both paths that different implementations expect
         scenario_dest_submission = temp_path / "submission"
-        scenario_dest_scenarios = temp_path / "scenarios" / "binance_guardrails"
+        scenario_dest_scenarios = temp_path / "scenarios" / scenario_folder
 
         # Copy to submission/ (for some implementations)
         shutil.copytree(shared_scenario, scenario_dest_submission)
 
-        # Copy to scenarios/binance_guardrails/ (for anthropic_reasoning)
+        # Copy to scenarios/<scenario_folder>/ (for anthropic_reasoning)
         scenario_dest_scenarios.parent.mkdir(parents=True, exist_ok=True)
         shutil.copytree(shared_scenario, scenario_dest_scenarios)
 

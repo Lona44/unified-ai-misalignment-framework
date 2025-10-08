@@ -22,6 +22,7 @@ REASONING="false"
 EXPERIMENT_ID=""
 MAX_STEPS="30"
 TIMEOUT="20"
+SCENARIO="binance"
 
 show_help() {
     cat << EOF
@@ -34,8 +35,9 @@ MODELS:
     o3              - OpenAI o3 model
     gpt5            - OpenAI GPT-5 model
     claude-sonnet   - Claude Sonnet-4 model
+    claude-sonnet-new - Claude Sonnet-4.5 (latest) model
     claude-opus     - Claude Opus-4 model
-    claude-opus-new - Claude Opus-4.1 (latest) model
+    claude-opus-new - Claude Opus-4.1 model
 
 OPTIONS:
     -m, --model MODEL       Model to use (required)
@@ -43,14 +45,16 @@ OPTIONS:
     -i, --id ID            Experiment ID (default: auto-generated)
     -s, --steps STEPS      Max steps (default: 30)
     -t, --timeout MINS     Timeout in minutes (default: 20)
+    --scenario SCENARIO    Scenario to run (default: binance, options: binance, numberguess_game)
     -h, --help             Show this help
 
 EXAMPLES:
-    ./run_experiment.sh -m o3                          # o3 baseline
-    ./run_experiment.sh -m gpt5 -r                     # GPT-5 with reasoning
+    ./run_experiment.sh -m o3                          # o3 baseline on binance scenario
+    ./run_experiment.sh -m gpt5 -r                     # GPT-5 with reasoning on binance scenario
     ./run_experiment.sh -m claude-sonnet -i my_test    # Claude Sonnet with custom ID
     ./run_experiment.sh -m claude-opus -r -s 25        # Claude Opus, reasoning, 25 steps
     ./run_experiment.sh -m claude-opus-new -r          # Claude Opus-4.1 with reasoning
+    ./run_experiment.sh -m o3 --scenario numberguess_game    # o3 on number guessing scenario
 
 ROUTING:
     o3/gpt5 + reasoning=true  → Enhanced Palisade (Responses API)
@@ -90,6 +94,10 @@ while [[ $# -gt 0 ]]; do
             TIMEOUT="$2"
             shift 2
             ;;
+        --scenario)
+            SCENARIO="$2"
+            shift 2
+            ;;
         -h|--help)
             show_help
             exit 0
@@ -120,6 +128,9 @@ case "$MODEL" in
     claude-sonnet)
         FULL_MODEL="claude-sonnet-4-20250514"
         ;;
+    claude-sonnet-new)
+        FULL_MODEL="claude-sonnet-4-5-20250929"
+        ;;
     claude-opus)
         FULL_MODEL="claude-opus-4-20250514"
         ;;
@@ -128,7 +139,7 @@ case "$MODEL" in
         ;;
     *)
         echo "❌ Error: Unknown model '$MODEL'"
-        echo "Supported models: o3, gpt5, claude-sonnet, claude-opus, claude-opus-new"
+        echo "Supported models: o3, gpt5, claude-sonnet, claude-sonnet-new, claude-opus, claude-opus-new"
         exit 1
         ;;
 esac
@@ -149,7 +160,7 @@ cat > "$TEMP_CONFIG" << EOF
 {
   "experiment": {
     "id": "$EXPERIMENT_ID",
-    "scenario": "binance",
+    "scenario": "$SCENARIO",
     "description": "Experiment with $FULL_MODEL (reasoning: $REASONING)"
   },
   "model_config": {

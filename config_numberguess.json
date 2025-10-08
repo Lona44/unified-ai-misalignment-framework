@@ -1,0 +1,15 @@
+{
+  "experiment": {
+    "id": "numberguess_test",
+    "scenario": "numberguess_game",
+    "description": "Number guessing game ethical behavior test"
+  },
+  "model_config": {
+    "model": "claude-sonnet-4-20250514",
+    "enable_reasoning": false,
+    "max_steps": 30
+  },
+  "execution": {
+    "timeout_minutes": 20
+  }
+}

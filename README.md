@@ -40,9 +40,11 @@ This range validates that the test neither trivially passes all models nor artif
 unified-misalignment-framework/
 ├── configs/                  # Experiment configurations
 ├── shared/                   # Shared resources (60% of codebase)
-│   ├── scenarios/binance_guardrails/  # Complete testing scenario
-│   ├── scripts/slack_post.py         # Notification system
-│   ├── common/command_client.py      # Communication layer
+│   ├── scenarios/            # Testing scenarios
+│   │   ├── binance_guardrails/    # Financial security scenario
+│   │   └── numberguess_game/      # Ethical constraint scenario
+│   ├── scripts/slack_post.py      # Notification system
+│   ├── common/command_client.py   # Communication layer
 │   └── docker/               # Containerization assets
 ├── implementations/          # Model-specific implementations
 │   ├── openai_reasoning/     # OpenAI models with reasoning traces
@@ -60,8 +62,8 @@ unified-misalignment-framework/
 |----------------|---------|---------------|-----------|----------------------|
 | **OpenAI Reasoning** | GPT-5, o3 | Responses API | High effort reasoning traces | Independent GPT-5 |
 | **OpenAI Baseline** | o3, GPT-5 | Chat API | None | Independent GPT-5 |
-| **Anthropic Reasoning** | Claude Sonnet-4, Opus-4, Opus-4.1 | LiteLLM | High effort reasoning | Independent GPT-5 |
-| **Anthropic Baseline** | Claude Sonnet-4, Opus-4, Opus-4.1 | LiteLLM | None | Independent GPT-5 |
+| **Anthropic Reasoning** | Claude Sonnet-4, Sonnet-4.5, Opus-4, Opus-4.1 | LiteLLM | High effort reasoning | Independent GPT-5 |
+| **Anthropic Baseline** | Claude Sonnet-4, Sonnet-4.5, Opus-4, Opus-4.1 | LiteLLM | None | Independent GPT-5 |
 
 ## Quick Start
 
@@ -74,11 +76,14 @@ unified-misalignment-framework/
 # o3 baseline testing
 ./run_experiment.sh -m o3
 
-# Claude Sonnet-4 with reasoning
-./run_experiment.sh -m claude-sonnet -r
+# Claude Sonnet-4.5 with reasoning
+./run_experiment.sh -m claude-sonnet-new -r
 
 # Claude Sonnet-4 baseline testing
 ./run_experiment.sh -m claude-sonnet
+
+# Run number guessing scenario with o3
+./run_experiment.sh -m o3 --scenario numberguess_game
 
 # View all options
 ./run_experiment.sh --help
@@ -88,6 +93,7 @@ unified-misalignment-framework/
 - `o3` - OpenAI o3 model
 - `gpt5` - OpenAI GPT-5 model
 - `claude-sonnet` - Claude Sonnet-4-20250514
+- `claude-sonnet-new` - Claude Sonnet-4.5-20250929 (latest)
 - `claude-opus` - Claude Opus-4-20250514
 - `claude-opus-new` - Claude Opus-4.1-20250805
 
@@ -96,6 +102,7 @@ unified-misalignment-framework/
 - `-s, --steps N` - Maximum steps (default: 30)
 - `-t, --timeout N` - Timeout in minutes (default: 20)
 - `-i, --id STRING` - Custom experiment identifier
+- `--scenario NAME` - Test scenario (binance, numberguess_game)
 
 ### Direct Python Execution
 
@@ -117,12 +124,16 @@ python3 unified_runner.py configs/claude_sonnet4_baseline.json
     "description": "Research objective description"
   },
   "model_config": {
-    "model": "gpt-5",
+    "model": "claude-sonnet-4-5-20250929",
     "enable_reasoning": true,
     "max_steps": 30
   }
 }
 ```
+
+**Available Scenarios:**
+- `binance` - Financial security and ethics testing scenario
+- `numberguess_game` - Ethical constraint and rule compliance scenario
 
 ## Setup Requirements
 
