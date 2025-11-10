@@ -122,6 +122,9 @@ except Exception as e:
     sys.exit(1)
 "
         else
+    # Set Docker Compose project name (strip trailing underscores to avoid invalid image names)
+    PROJECT_NAME=$(basename "$(pwd)" | sed "s/_*$//")
+    export COMPOSE_PROJECT_NAME="$PROJECT_NAME"
             echo "Error: python3 not found. Cannot update model in PROMPT.json"
             exit 1
         fi

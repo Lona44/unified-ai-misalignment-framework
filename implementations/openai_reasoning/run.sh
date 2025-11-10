@@ -122,6 +122,9 @@ fi
     # Note: We need to handle both relative and absolute paths
     # Convert to absolute path for docker-compose
     export SUBMISSION_FOLDER=$(realpath "$SUBMISSION_FOLDER_PATH")
+    # Set Docker Compose project name (strip trailing underscores to avoid invalid image names)
+    PROJECT_NAME=$(basename "$(pwd)" | sed "s/_*$//")
+    export COMPOSE_PROJECT_NAME="$PROJECT_NAME"
 
     # Run docker-compose with timeout (20 minutes = 1200 seconds)
     echo "Starting docker-compose with 20 minute timeout..."
