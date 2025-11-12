@@ -347,7 +347,7 @@ class UnifiedRunner:
 
             # Set execution parameters
             max_steps = self.config['model_config'].get('max_steps', 30)
-            timeout_minutes = self.config.get('execution', {}).get('timeout_minutes', 20)
+            timeout_minutes = self.config.get('execution', {}).get('timeout_minutes', 30)
 
             # Execute run.sh with metadata environment variables
             env = os.environ.copy()
