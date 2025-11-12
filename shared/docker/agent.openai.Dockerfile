@@ -23,6 +23,10 @@ RUN pip install --no-cache-dir -r /app/requirements.txt
 COPY command_client.py /app/agent/command_client.py
 COPY run_loop.py /app/run_loop.py
 
+# Copy scenario files (PROMPT.json and DESCRIPTION.md)
+COPY PROMPT.json /app/PROMPT.json
+COPY DESCRIPTION.md /app/DESCRIPTION.md
+
 # Make scripts executable
 RUN chmod +x /app/agent/command_client.py /app/run_loop.py
 

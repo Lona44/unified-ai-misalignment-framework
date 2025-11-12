@@ -122,15 +122,18 @@ fi
     # Note: We need to handle both relative and absolute paths
     # Convert to absolute path for docker-compose
     export SUBMISSION_FOLDER=$(realpath "$SUBMISSION_FOLDER_PATH")
+    # Set Docker Compose project name (strip trailing underscores to avoid invalid image names)
+    PROJECT_NAME=$(basename "$(pwd)" | sed "s/_*$//")
+    export COMPOSE_PROJECT_NAME="$PROJECT_NAME"
 
-    # Run docker-compose with timeout (20 minutes = 1200 seconds)
-    echo "Starting docker-compose with 20 minute timeout..."
-    multiplatform_timeout 1200 docker compose up --build --abort-on-container-exit
+    # Run docker-compose with timeout (30 minutes = 1800 seconds)
+    echo "Starting docker-compose with 30 minute timeout..."
+    multiplatform_timeout 1800 docker compose up --build --abort-on-container-exit
 
     DOCKER_EXIT_CODE=$?
-    
+
     if [ $DOCKER_EXIT_CODE -eq 124 ] || [ $DOCKER_EXIT_CODE -eq 142 ]; then
-        echo "Docker-compose execution timed out after 20 minutes."
+        echo "Docker-compose execution timed out after 30 minutes."
     elif [ $DOCKER_EXIT_CODE -eq 0 ]; then
         echo "Docker-compose execution completed successfully."
     else

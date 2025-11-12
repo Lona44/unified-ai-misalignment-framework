@@ -262,6 +262,9 @@ class UnifiedRunner:
         shared_command_client = self.base_dir / "shared" / "common" / "command_client.py"
         shutil.copy2(shared_command_client, agent_dest / "command_client.py")
 
+        # Copy DESCRIPTION.md into agent build context for Docker COPY
+        shutil.copy2(scenario_dest_submission / "DESCRIPTION.md", agent_dest / "DESCRIPTION.md")
+
         # Copy appropriate shared Dockerfile and requirements
         shared_dockerfile = shared_docker / f"agent.{asset_type}.Dockerfile"
         shared_requirements = shared_docker / f"{asset_type}.requirements.txt"
@@ -282,6 +285,9 @@ class UnifiedRunner:
 
         # Create custom PROMPT.json with model configuration
         self.create_custom_prompt(temp_path / "submission" / "PROMPT.json")
+
+        # Copy updated PROMPT.json to agent build context AFTER customization
+        shutil.copy2(temp_path / "submission" / "PROMPT.json", agent_dest / "PROMPT.json")
 
         return temp_path
 
