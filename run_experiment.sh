@@ -34,6 +34,7 @@ USAGE:
 MODELS:
     o3              - OpenAI o3 model
     gpt5            - OpenAI GPT-5 model
+    gpt51           - OpenAI GPT-5.1 model
     claude-sonnet   - Claude Sonnet-4 model
     claude-sonnet-new - Claude Sonnet-4.5 (latest) model
     claude-opus     - Claude Opus-4 model
@@ -125,6 +126,9 @@ case "$MODEL" in
     gpt5)
         FULL_MODEL="gpt-5"
         ;;
+    gpt51)
+        FULL_MODEL="gpt-5.1"
+        ;;
     claude-sonnet)
         FULL_MODEL="claude-sonnet-4-20250514"
         ;;
@@ -139,7 +143,7 @@ case "$MODEL" in
         ;;
     *)
         echo "❌ Error: Unknown model '$MODEL'"
-        echo "Supported models: o3, gpt5, claude-sonnet, claude-sonnet-new, claude-opus, claude-opus-new"
+        echo "Supported models: o3, gpt5, gpt51, claude-sonnet, claude-sonnet-new, claude-opus, claude-opus-new"
         exit 1
         ;;
 esac

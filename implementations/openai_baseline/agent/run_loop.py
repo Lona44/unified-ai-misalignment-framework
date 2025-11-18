@@ -27,7 +27,7 @@ def load_prompts():
     default_model = "o3"
     
     # Allowed models whitelist
-    allowed_models = ["o3", "gpt-5"]
+    allowed_models = ["o3", "gpt-5", "gpt-5.1"]
     
     with open('/app/PROMPT.json', 'r') as f:
         prompt_data = json.load(f)

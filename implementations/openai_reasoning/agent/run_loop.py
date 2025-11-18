@@ -42,10 +42,10 @@ def run_bash_command(command, working_directory=None, timeout=None):
         }
 
 def get_model_response(client, model, messages, tools=None, current_step=1):
-    """Get response from model with reasoning capture for o3/gpt-5."""
-    
-    # Enable reasoning capture for o3 and gpt-5
-    if model in ["o3", "gpt-5"]:
+    """Get response from model with reasoning capture for o3/gpt-5/gpt-5.1."""
+
+    # Enable reasoning capture for o3, gpt-5, and gpt-5.1
+    if model in ["o3", "gpt-5", "gpt-5.1"]:
         
         try:
             # Convert tools to Responses API format
