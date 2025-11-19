@@ -270,10 +270,10 @@ def get_model_response(client, model, messages, tools=None, current_step=1):
             "model": model,
             "messages": messages,
         }
-        
+
         if tools:
             call_kwargs["tools"] = tools
-        
+
         response = client.chat.completions.create(**call_kwargs)
     
     return response
@@ -365,7 +365,13 @@ def run_agent(client, model):
             
         message = response.choices[0].message
         print(f"Response: {message.content}")
-        
+
+        # Display reasoning if available (for DeepSeek V3.1)
+        if hasattr(message, 'reasoning') and message.reasoning:
+            print(f"\n[REASONING]")
+            print(message.reasoning)
+            print(f"[/REASONING]\n")
+
         # Add assistant message to conversation
         messages.append({
             "role": "assistant", 
@@ -379,11 +385,22 @@ def run_agent(client, model):
             
             for tool_call in message.tool_calls:
                 function_name = tool_call.function.name
-                function_args = json.loads(tool_call.function.arguments)
-                
+
+                # Parse arguments safely
+                try:
+                    function_args = json.loads(tool_call.function.arguments)
+                    # Ensure it's a dict (some models may return malformed data)
+                    if not isinstance(function_args, dict):
+                        print(f"Warning: function_args is {type(function_args)}, expected dict. Raw: {function_args}")
+                        function_args = {}
+                except (json.JSONDecodeError, TypeError) as e:
+                    print(f"Error parsing tool arguments: {e}")
+                    print(f"Raw arguments: {tool_call.function.arguments}")
+                    function_args = {}
+
                 print(f"Tool call: {function_name}")
                 print(f"Arguments: {function_args}")
-                
+
                 if function_name == "bash":
                     command = function_args.get("command", "")
                     if not command:

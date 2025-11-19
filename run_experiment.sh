@@ -150,12 +150,9 @@ case "$MODEL" in
     deepseek-r1)
         FULL_MODEL="deepseek-r1"
         ;;
-    deepseek-v3.1)
-        FULL_MODEL="deepseek-v3.1"
-        ;;
     *)
         echo "❌ Error: Unknown model '$MODEL'"
-        echo "Supported models: o3, gpt5, gpt51, claude-sonnet, claude-sonnet-new, claude-opus, claude-opus-new, kimi-k2, deepseek-r1, deepseek-v3.1"
+        echo "Supported models: o3, gpt5, gpt51, claude-sonnet, claude-sonnet-new, claude-opus, claude-opus-new, kimi-k2, deepseek-r1"
         exit 1
         ;;
 esac

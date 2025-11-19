@@ -328,8 +328,7 @@ class UnifiedRunner:
         # Map simplified model names to actual OpenRouter model IDs
         model_mapping = {
             'kimi-k2': 'moonshotai/kimi-k2-thinking' if enable_reasoning else 'moonshotai/kimi-k2',
-            'deepseek-r1': 'deepseek/deepseek-r1' if enable_reasoning else 'deepseek/deepseek-chat-v3',
-            'deepseek-v3.1': 'deepseek/deepseek-chat' if enable_reasoning else 'deepseek/deepseek-chat'
+            'deepseek-r1': 'deepseek/deepseek-r1' if enable_reasoning else 'deepseek/deepseek-chat-v3'
         }
 
         # Use mapped model if available, otherwise use original
