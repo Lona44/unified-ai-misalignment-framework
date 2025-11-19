@@ -143,7 +143,7 @@ class UnifiedRunner:
                 return self.route_to_anthropic_reasoning()
             else:
                 return self.route_to_anthropic_baseline()
-        elif model in ['kimi-k2', 'deepseek-r1']:
+        elif model in ['kimi-k2', 'deepseek-r1', 'deepseek-v3.1']:
             # OpenRouter models - route to openai_reasoning (supports OpenRouter)
             # Note: These implementations now detect OpenRouter models and use appropriate API
             if enable_reasoning:
