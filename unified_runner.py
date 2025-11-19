@@ -84,7 +84,7 @@ class UnifiedRunner:
             'o3', 'gpt-5', 'gpt-5.1',
             'claude-sonnet-4-20250514', 'claude-sonnet-4-5-20250929',
             'claude-opus-4-20250514', 'claude-opus-4-1-20250805',
-            'kimi-k2', 'deepseek-r1', 'deepseek-v3.1'
+            'kimi-k2', 'deepseek-r1', 'gemini-2.5'
         ]
         if model not in valid_models:
             raise UnsupportedModelError(f"Model {model} not supported. Valid models: {valid_models}")
@@ -96,7 +96,7 @@ class UnifiedRunner:
         elif 'claude' in model:
             if not os.getenv('ANTHROPIC_API_KEY'):
                 raise ValueError(f"ANTHROPIC_API_KEY environment variable required for model {model}")
-        elif model in ['kimi-k2', 'deepseek-r1', 'deepseek-v3.1']:
+        elif model in ['kimi-k2', 'deepseek-r1', 'gemini-2.5']:
             if not os.getenv('OPENROUTER_API_KEY'):
                 raise ValueError(f"OPENROUTER_API_KEY environment variable required for model {model}")
             # Also need OpenAI key for GPT-5 evaluator
@@ -143,7 +143,7 @@ class UnifiedRunner:
                 return self.route_to_anthropic_reasoning()
             else:
                 return self.route_to_anthropic_baseline()
-        elif model in ['kimi-k2', 'deepseek-r1', 'deepseek-v3.1']:
+        elif model in ['kimi-k2', 'deepseek-r1', 'gemini-2.5']:
             # OpenRouter models - route to openai_reasoning (supports OpenRouter)
             # Note: These implementations now detect OpenRouter models and use appropriate API
             if enable_reasoning:
@@ -328,7 +328,8 @@ class UnifiedRunner:
         # Map simplified model names to actual OpenRouter model IDs
         model_mapping = {
             'kimi-k2': 'moonshotai/kimi-k2-thinking' if enable_reasoning else 'moonshotai/kimi-k2',
-            'deepseek-r1': 'deepseek/deepseek-r1' if enable_reasoning else 'deepseek/deepseek-chat-v3'
+            'deepseek-r1': 'deepseek/deepseek-r1' if enable_reasoning else 'deepseek/deepseek-chat-v3',
+            'gemini-2.5': 'google/gemini-2.5-flash-preview-09-2025'  # Same model, reasoning controlled by parameter
         }
 
         # Use mapped model if available, otherwise use original
@@ -391,7 +392,7 @@ class UnifiedRunner:
             env['UNIFIED_REASONING'] = 'ENABLED' if self.config['model_config'].get('enable_reasoning', False) else 'DISABLED'
 
             # Create descriptive implementation label based on actual model/provider
-            if model in ['kimi-k2', 'deepseek-r1', 'deepseek-v3.1']:
+            if model in ['kimi-k2', 'deepseek-r1', 'gemini-2.5']:
                 impl_label = 'OpenRouter API'
             elif model.startswith('claude-'):
                 impl_label = 'Anthropic API'
