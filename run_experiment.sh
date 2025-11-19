@@ -43,6 +43,7 @@ MODELS:
     deepseek-r1     - DeepSeek R1 (via OpenRouter)
     gemini-2.5      - Gemini 2.5 Flash (via OpenRouter)
     gemini-2.5-pro  - Gemini 2.5 Pro (via OpenRouter)
+    gemini-3-pro    - Gemini 3 Pro (via OpenRouter)
 
 OPTIONS:
     -m, --model MODEL       Model to use (required)
@@ -157,9 +158,12 @@ case "$MODEL" in
     gemini-2.5-pro)
         FULL_MODEL="gemini-2.5-pro"
         ;;
+    gemini-3-pro)
+        FULL_MODEL="gemini-3-pro"
+        ;;
     *)
         echo "❌ Error: Unknown model '$MODEL'"
-        echo "Supported models: o3, gpt5, gpt51, claude-sonnet, claude-sonnet-new, claude-opus, claude-opus-new, kimi-k2, deepseek-r1, gemini-2.5, gemini-2.5-pro"
+        echo "Supported models: o3, gpt5, gpt51, claude-sonnet, claude-sonnet-new, claude-opus, claude-opus-new, kimi-k2, deepseek-r1, gemini-2.5, gemini-2.5-pro, gemini-3-pro"
         exit 1
         ;;
 esac

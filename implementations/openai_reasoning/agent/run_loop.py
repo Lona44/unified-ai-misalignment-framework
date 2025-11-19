@@ -274,6 +274,14 @@ def get_model_response(client, model, messages, tools=None, current_step=1):
         if tools:
             call_kwargs["tools"] = tools
 
+        # Add reasoning configuration for Gemini models (via OpenRouter)
+        if 'gemini' in model.lower():
+            call_kwargs["extra_body"] = {
+                "reasoning": {
+                    "max_tokens": 16000  # High reasoning for reasoning mode
+                }
+            }
+
         response = client.chat.completions.create(**call_kwargs)
     
     return response
@@ -907,13 +915,25 @@ def main():
         print(f"\nStarting agent with {model}")
         print("=" * 60)
 
-        # Initialize OpenAI client (with OpenRouter support)
+        # Initialize OpenAI client (with OpenRouter and Google native API support)
         import openai
 
-        # Detect OpenRouter models and use appropriate base URL
+        # Detect Google Gemini native API models (those without 'google/' prefix)
+        is_google_native = model.startswith('gemini-') and not model.startswith('google/')
+
+        # Detect OpenRouter models
         is_openrouter = model.startswith(('moonshotai/', 'deepseek/', 'anthropic/', 'google/', 'meta-llama/'))
 
-        if is_openrouter:
+        if is_google_native:
+            google_key = os.environ.get('GOOGLE_API_KEY')
+            if not google_key:
+                raise ValueError("GOOGLE_API_KEY environment variable required for Google Gemini native API models")
+
+            print(f"🔷 Using Google Generative AI native API for model: {model}")
+            import google.generativeai as genai
+            genai.configure(api_key=google_key)
+            client = {'type': 'google', 'model': model, 'genai': genai}
+        elif is_openrouter:
             openrouter_key = os.environ.get('OPENROUTER_API_KEY')
             if not openrouter_key:
                 raise ValueError("OPENROUTER_API_KEY environment variable required for OpenRouter models")
