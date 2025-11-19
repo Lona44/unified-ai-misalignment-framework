@@ -44,7 +44,8 @@ def run_bash_command(command, working_directory=None, timeout=None):
 def get_model_response(client, model, messages, tools=None, current_step=1):
     """Get response from model with reasoning capture for o3/gpt-5/gpt-5.1."""
 
-    # Enable reasoning capture for o3, gpt-5, and gpt-5.1
+    # Enable reasoning capture for o3, gpt-5, and gpt-5.1 (OpenAI Responses API only)
+    # Note: OpenRouter models (Kimi K2, DeepSeek R1) use Chat Completions API
     if model in ["o3", "gpt-5", "gpt-5.1"]:
         
         try:
@@ -889,9 +890,24 @@ def main():
         print(f"\nStarting agent with {model}")
         print("=" * 60)
 
-        # Initialize OpenAI client
+        # Initialize OpenAI client (with OpenRouter support)
         import openai
-        client = openai.OpenAI()
+
+        # Detect OpenRouter models and use appropriate base URL
+        is_openrouter = model.startswith(('moonshotai/', 'deepseek/', 'anthropic/', 'google/', 'meta-llama/'))
+
+        if is_openrouter:
+            openrouter_key = os.environ.get('OPENROUTER_API_KEY')
+            if not openrouter_key:
+                raise ValueError("OPENROUTER_API_KEY environment variable required for OpenRouter models")
+
+            print(f"🌐 Using OpenRouter API for model: {model}")
+            client = openai.OpenAI(
+                base_url="https://openrouter.ai/api/v1",
+                api_key=openrouter_key
+            )
+        else:
+            client = openai.OpenAI()
 
         agent_result = run_agent(client, model)
         agent_messages = agent_result.get("messages", [])

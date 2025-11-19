@@ -80,7 +80,12 @@ class UnifiedRunner:
 
         # Validate model
         model = self.config['model_config']['model']
-        valid_models = ['o3', 'gpt-5', 'gpt-5.1', 'claude-sonnet-4-20250514', 'claude-sonnet-4-5-20250929', 'claude-opus-4-20250514', 'claude-opus-4-1-20250805']
+        valid_models = [
+            'o3', 'gpt-5', 'gpt-5.1',
+            'claude-sonnet-4-20250514', 'claude-sonnet-4-5-20250929',
+            'claude-opus-4-20250514', 'claude-opus-4-1-20250805',
+            'kimi-k2', 'deepseek-r1'
+        ]
         if model not in valid_models:
             raise UnsupportedModelError(f"Model {model} not supported. Valid models: {valid_models}")
 
@@ -91,6 +96,12 @@ class UnifiedRunner:
         elif 'claude' in model:
             if not os.getenv('ANTHROPIC_API_KEY'):
                 raise ValueError(f"ANTHROPIC_API_KEY environment variable required for model {model}")
+        elif model in ['kimi-k2', 'deepseek-r1']:
+            if not os.getenv('OPENROUTER_API_KEY'):
+                raise ValueError(f"OPENROUTER_API_KEY environment variable required for model {model}")
+            # Also need OpenAI key for GPT-5 evaluator
+            if not os.getenv('OPENAI_API_KEY'):
+                raise ValueError(f"OPENAI_API_KEY environment variable required for GPT-5 evaluator")
 
         # Validate numeric fields
         max_steps = self.config.get('model_config', {}).get('max_steps', 30)
@@ -132,6 +143,13 @@ class UnifiedRunner:
                 return self.route_to_anthropic_reasoning()
             else:
                 return self.route_to_anthropic_baseline()
+        elif model in ['kimi-k2', 'deepseek-r1']:
+            # OpenRouter models - route to openai_reasoning (supports OpenRouter)
+            # Note: These implementations now detect OpenRouter models and use appropriate API
+            if enable_reasoning:
+                return self.route_to_openai_reasoning()
+            else:
+                return self.route_to_openai_baseline()
         else:
             raise UnsupportedModelError(f"Model {model} not supported")
 
@@ -305,19 +323,32 @@ class UnifiedRunner:
             ValueError: If prompt configuration is malformed
         """
         model = self.config['model_config']['model']
+        enable_reasoning = self.config['model_config'].get('enable_reasoning', False)
+
+        # Map simplified model names to actual OpenRouter model IDs
+        model_mapping = {
+            'kimi-k2': 'moonshotai/kimi-k2-thinking' if enable_reasoning else 'moonshotai/kimi-k2',
+            'deepseek-r1': 'deepseek/deepseek-r1' if enable_reasoning else 'deepseek/deepseek-chat-v3'
+        }
+
+        # Use mapped model if available, otherwise use original
+        actual_model = model_mapping.get(model, model)
 
         # Load base prompt
         with open(prompt_path, 'r') as f:
             prompt_data = json.load(f)
 
         # Update model
-        prompt_data['model'] = model
+        prompt_data['model'] = actual_model
 
         # Write updated prompt
         with open(prompt_path, 'w') as f:
             json.dump(prompt_data, f, indent=2)
 
-        print(f"✓ Updated PROMPT.json with model: {model}")
+        if actual_model != model:
+            print(f"✓ Updated PROMPT.json with model: {model} → {actual_model}")
+        else:
+            print(f"✓ Updated PROMPT.json with model: {model}")
 
     def execute_implementation(self, implementation_name: str) -> Dict[str, Any]:
         """Execute the selected implementation and return results.
@@ -355,9 +386,21 @@ class UnifiedRunner:
             env['NO_TIMESTAMP'] = 'true'  # We handle timestamps ourselves
 
             # Add metadata for display in step logs
-            env['UNIFIED_MODEL'] = self.config['model_config']['model']
+            model = self.config['model_config']['model']
+            env['UNIFIED_MODEL'] = model
             env['UNIFIED_REASONING'] = 'ENABLED' if self.config['model_config'].get('enable_reasoning', False) else 'DISABLED'
-            env['UNIFIED_IMPLEMENTATION'] = implementation_name.replace('_', ' ').title()
+
+            # Create descriptive implementation label based on actual model/provider
+            if model in ['kimi-k2', 'deepseek-r1']:
+                impl_label = 'OpenRouter API'
+            elif model.startswith('claude-'):
+                impl_label = 'Anthropic API'
+            elif model in ['gpt-5', 'o3', 'gpt-5.1']:
+                impl_label = 'OpenAI API'
+            else:
+                impl_label = implementation_name.replace('_', ' ').title()
+
+            env['UNIFIED_IMPLEMENTATION'] = impl_label
             env['UNIFIED_EXPERIMENT_ID'] = self.config['experiment']['id']
             env['UNIFIED_MAX_STEPS'] = str(self.config['model_config'].get('max_steps', 30))
 

@@ -39,6 +39,8 @@ MODELS:
     claude-sonnet-new - Claude Sonnet-4.5 (latest) model
     claude-opus     - Claude Opus-4 model
     claude-opus-new - Claude Opus-4.1 model
+    kimi-k2         - Kimi K2 (via OpenRouter)
+    deepseek-r1     - DeepSeek R1 (via OpenRouter)
 
 OPTIONS:
     -m, --model MODEL       Model to use (required)
@@ -141,9 +143,15 @@ case "$MODEL" in
     claude-opus-new)
         FULL_MODEL="claude-opus-4-1-20250805"
         ;;
+    kimi-k2)
+        FULL_MODEL="kimi-k2"
+        ;;
+    deepseek-r1)
+        FULL_MODEL="deepseek-r1"
+        ;;
     *)
         echo "❌ Error: Unknown model '$MODEL'"
-        echo "Supported models: o3, gpt5, gpt51, claude-sonnet, claude-sonnet-new, claude-opus, claude-opus-new"
+        echo "Supported models: o3, gpt5, gpt51, claude-sonnet, claude-sonnet-new, claude-opus, claude-opus-new, kimi-k2, deepseek-r1"
         exit 1
         ;;
 esac
