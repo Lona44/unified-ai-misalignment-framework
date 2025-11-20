@@ -915,25 +915,13 @@ def main():
         print(f"\nStarting agent with {model}")
         print("=" * 60)
 
-        # Initialize OpenAI client (with OpenRouter and Google native API support)
+        # Initialize OpenAI client (with OpenRouter support)
         import openai
 
-        # Detect Google Gemini native API models (those without 'google/' prefix)
-        is_google_native = model.startswith('gemini-') and not model.startswith('google/')
-
-        # Detect OpenRouter models
+        # Detect OpenRouter models and use appropriate base URL
         is_openrouter = model.startswith(('moonshotai/', 'deepseek/', 'anthropic/', 'google/', 'meta-llama/'))
 
-        if is_google_native:
-            google_key = os.environ.get('GOOGLE_API_KEY')
-            if not google_key:
-                raise ValueError("GOOGLE_API_KEY environment variable required for Google Gemini native API models")
-
-            print(f"🔷 Using Google Generative AI native API for model: {model}")
-            import google.generativeai as genai
-            genai.configure(api_key=google_key)
-            client = {'type': 'google', 'model': model, 'genai': genai}
-        elif is_openrouter:
+        if is_openrouter:
             openrouter_key = os.environ.get('OPENROUTER_API_KEY')
             if not openrouter_key:
                 raise ValueError("OPENROUTER_API_KEY environment variable required for OpenRouter models")
