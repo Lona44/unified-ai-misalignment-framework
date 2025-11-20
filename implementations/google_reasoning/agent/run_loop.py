@@ -151,7 +151,7 @@ def get_model_response(client, model_name, google_contents, system_instruction, 
                 print(f"Thought summaries received: {len(thought_summaries)}")
                 for i, thought in enumerate(thought_summaries, 1):
                     print(f"\n🧠 THINKING {i}:")
-                    print(thought[:500] + ("..." if len(thought) > 500 else ""))
+                    print(thought)
             print("\033[94m" + "=" * 60 + "\033[0m")
 
             # Save thinking metadata to file
