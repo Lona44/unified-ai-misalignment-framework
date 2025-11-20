@@ -96,13 +96,18 @@ class UnifiedRunner:
         elif 'claude' in model:
             if not os.getenv('ANTHROPIC_API_KEY'):
                 raise ValueError(f"ANTHROPIC_API_KEY environment variable required for model {model}")
-        elif model in ['kimi-k2', 'deepseek-r1', 'gemini-2.5', 'gemini-2.5-pro', 'gemini-3-pro']:
-            # Gemini 3 Pro with reasoning uses Google native API, others use OpenRouter
-            enable_reasoning = self.config.get('model_config', {}).get('enable_reasoning', False)
-            if model == 'gemini-3-pro' and enable_reasoning:
-                if not os.getenv('GOOGLE_API_KEY'):
-                    raise ValueError(f"GOOGLE_API_KEY environment variable required for Gemini 3 Pro reasoning mode")
-            elif not os.getenv('OPENROUTER_API_KEY'):
+        elif model == 'gemini-3-pro':
+            # Gemini 3 Pro: Always uses Google native API for both baseline and reasoning
+            # Baseline: low thinking + thoughts hidden
+            # Reasoning: high thinking (default) + thoughts visible
+            if not os.getenv('GOOGLE_API_KEY'):
+                raise ValueError(f"GOOGLE_API_KEY environment variable required for {model}")
+            # Always need OpenAI key for GPT-5 evaluator
+            if not os.getenv('OPENAI_API_KEY'):
+                raise ValueError(f"OPENAI_API_KEY environment variable required for GPT-5 evaluator")
+        elif model in ['kimi-k2', 'deepseek-r1', 'gemini-2.5', 'gemini-2.5-pro']:
+            # Other OpenRouter models
+            if not os.getenv('OPENROUTER_API_KEY'):
                 raise ValueError(f"OPENROUTER_API_KEY environment variable required for model {model}")
             # Also need OpenAI key for GPT-5 evaluator
             if not os.getenv('OPENAI_API_KEY'):
@@ -148,9 +153,13 @@ class UnifiedRunner:
                 return self.route_to_anthropic_reasoning()
             else:
                 return self.route_to_anthropic_baseline()
-        elif model in ['kimi-k2', 'deepseek-r1', 'gemini-2.5', 'gemini-2.5-pro', 'gemini-3-pro']:
-            # OpenRouter models - route to openai_reasoning (supports OpenRouter)
-            # Note: These implementations now detect OpenRouter models and use appropriate API
+        elif model == 'gemini-3-pro':
+            # Gemini 3 Pro: Always uses google_reasoning implementation
+            # Baseline: low thinking + thoughts hidden
+            # Reasoning: high thinking (default) + thoughts visible
+            return self.route_to_google_reasoning()
+        elif model in ['kimi-k2', 'deepseek-r1', 'gemini-2.5', 'gemini-2.5-pro']:
+            # Other OpenRouter models - route to openai_reasoning (supports OpenRouter)
             if enable_reasoning:
                 return self.route_to_openai_reasoning()
             else:
@@ -178,6 +187,11 @@ class UnifiedRunner:
         print("📡 Routing to Anthropic Baseline (LiteLLM + no reasoning)")
         return self.execute_implementation('anthropic_baseline')
 
+    def route_to_google_reasoning(self):
+        """Route to Google Reasoning (Native Generative AI API + thinking mode)."""
+        print("📡 Routing to Google Reasoning (Native API + thinking mode)")
+        return self.execute_implementation('google_reasoning')
+
     def sanitize_for_docker(self, name: str) -> str:
         """Sanitize name for Docker compatibility by replacing underscores with hyphens.
 
@@ -199,7 +213,7 @@ class UnifiedRunner:
             implementation_name: Name of the implementation (e.g., 'openai_baseline', 'anthropic_reasoning')
 
         Returns:
-            Asset type string ('openai' or 'anthropic')
+            Asset type string ('openai', 'anthropic', or 'google')
 
         Raises:
             ValueError: If implementation name is not recognized
@@ -208,6 +222,8 @@ class UnifiedRunner:
             return 'openai'
         elif implementation_name in ['anthropic_reasoning', 'anthropic_baseline']:
             return 'anthropic'
+        elif implementation_name == 'google_reasoning':
+            return 'google'
         else:
             raise ValueError(f"Unknown implementation: {implementation_name}")
 
@@ -336,7 +352,7 @@ class UnifiedRunner:
             'deepseek-r1': 'deepseek/deepseek-r1' if enable_reasoning else 'deepseek/deepseek-chat-v3',
             'gemini-2.5': 'google/gemini-2.5-flash-preview-09-2025',  # Same model, reasoning controlled by parameter
             'gemini-2.5-pro': 'google/gemini-2.5-pro',  # Most advanced Gemini 2.5 model
-            'gemini-3-pro': 'gemini-3-pro-preview' if enable_reasoning else 'google/gemini-3-pro-preview'  # Native API for reasoning, OpenRouter for baseline
+            'gemini-3-pro': 'google/gemini-3-pro-preview'  # Testing: Use OpenRouter for both baseline and reasoning
         }
 
         # Use mapped model if available, otherwise use original
