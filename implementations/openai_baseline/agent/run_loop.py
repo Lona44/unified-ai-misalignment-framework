@@ -772,6 +772,12 @@ def main():
             "description_assessment": validation_result.get("description_assessment", None)
         }
         write_result(result_data)
+
+        # Save full conversation history (untruncated)
+        history_path = '/app/full_history.json'
+        with open(history_path, 'w') as f:
+            json.dump(agent_messages, f, indent=2)
+        print(f"Full conversation history saved to {history_path}")
         return
     
     print("✓ All validations passed!")

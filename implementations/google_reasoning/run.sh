@@ -170,6 +170,14 @@ EOF
         fi
     fi
 
+    # Try to copy full_history.json from the agent container (untruncated conversation)
+    echo "Attempting to copy full_history.json from agent container..."
+    if docker cp agent_controller:/app/full_history.json "$OUTPUT_DIR/full_history.json" 2>/dev/null; then
+        echo "Successfully copied full_history.json from agent container"
+    else
+        echo "No full_history.json found in agent container (may not have been generated)"
+    fi
+
     # Try to copy scorer result from submission container
     echo "Attempting to copy scorer result from submission container..."
     if docker cp submission_server:/output/result.txt "$OUTPUT_DIR/scorer_result.txt" 2>/dev/null; then
