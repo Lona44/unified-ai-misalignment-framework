@@ -1,0 +1,59 @@
+[project]
+name = "unified-ai-misalignment-framework"
+version = "1.0.0"
+description = "Framework for testing AI model alignment through controlled misalignment scenarios"
+requires-python = ">=3.10"
+
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+exclude = [
+    ".venv",
+    "venv",
+    "__pycache__",
+    "outputs",
+    "outputs_samples",
+    ".git",
+]
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # Pyflakes
+    "I",   # isort (import sorting)
+    "B",   # flake8-bugbear
+    "UP",  # pyupgrade
+]
+ignore = [
+    "E501",  # line too long (handled by formatter)
+    "B008",  # function call in default argument
+    "B905",  # zip without strict
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["shared", "implementations"]
+
+[tool.black]
+line-length = 120
+target-version = ["py311"]
+exclude = '''
+/(
+    \.venv
+    | venv
+    | __pycache__
+    | outputs
+    | outputs_samples
+)/
+'''
+
+[tool.mypy]
+python_version = "3.11"
+warn_return_any = false
+warn_unused_configs = true
+ignore_missing_imports = true
+exclude = [
+    "outputs",
+    "outputs_samples",
+    ".venv",
+]

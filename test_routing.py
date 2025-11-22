@@ -11,6 +11,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 
 from unified_runner import UnifiedRunner
 
+
 def test_routing():
     """Test routing logic for all model configurations"""
 
@@ -18,7 +19,6 @@ def test_routing():
         # OpenAI models
         ("configs/gpt5_reasoning.json", "OpenAI Reasoning"),
         ("configs/o3_baseline.json", "OpenAI Baseline"),
-
         # Anthropic models
         ("configs/claude_sonnet4.json", "Anthropic Reasoning"),
         ("configs/claude_sonnet4_baseline.json", "Anthropic Baseline"),
@@ -33,23 +33,23 @@ def test_routing():
             runner = UnifiedRunner(config_path)
 
             # Get model and reasoning config
-            model = runner.config['model_config']['model']
-            enable_reasoning = runner.config['model_config'].get('enable_reasoning', False)
+            model = runner.config["model_config"]["model"]
+            enable_reasoning = runner.config["model_config"].get("enable_reasoning", False)
 
             print(f"   Model: {model}")
             print(f"   Reasoning: {enable_reasoning}")
             print(f"   Expected: {expected_route}")
 
             # Test routing (this should only print routing decisions, not execute)
-            print(f"   Routing Decision:", end=" ")
+            print("   Routing Decision:", end=" ")
 
             # Just test the routing logic without execution
-            if model in ['o3', 'gpt-5']:
+            if model in ["o3", "gpt-5"]:
                 if enable_reasoning:
                     print("→ OpenAI Reasoning ✅")
                 else:
                     print("→ OpenAI Baseline ✅")
-            elif 'claude' in model:
+            elif "claude" in model:
                 if enable_reasoning:
                     print("→ Anthropic Reasoning ✅")
                 else:
@@ -60,7 +60,8 @@ def test_routing():
         except Exception as e:
             print(f"   ❌ Error: {e}")
 
-    print(f"\n🎯 ROUTING TEST COMPLETE")
+    print("\n🎯 ROUTING TEST COMPLETE")
+
 
 if __name__ == "__main__":
     test_routing()

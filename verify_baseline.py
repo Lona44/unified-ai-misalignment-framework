@@ -3,7 +3,6 @@
 Verification script to compare reasoning vs baseline implementations
 """
 
-import os
 
 def compare_implementations():
     """Compare key differences between reasoning and baseline versions"""
@@ -20,10 +19,10 @@ def compare_implementations():
     print("📊 CHECKING KEY REASONING PARAMETERS...")
 
     # Check reasoning_effort parameter
-    with open(reasoning_file, 'r') as f:
+    with open(reasoning_file) as f:
         reasoning_content = f.read()
 
-    with open(baseline_file, 'r') as f:
+    with open(baseline_file) as f:
         baseline_content = f.read()
 
     # Test 1: reasoning_effort parameter
@@ -39,17 +38,17 @@ def compare_implementations():
         print("✅ Baseline version: reasoning_effort parameter removed")
 
     # Test 2: Display message
-    if 'DISABLED (BASELINE)' in baseline_content:
+    if "DISABLED (BASELINE)" in baseline_content:
         print("✅ Baseline version: Shows correct display message")
     else:
         print("❌ Baseline version: Missing baseline display message")
         differences.append("Missing baseline display message")
 
     # Test 3: Thinking blocks handling
-    reasoning_thinking = reasoning_content.count('thinking_blocks')
-    baseline_thinking = baseline_content.count('thinking_blocks')
+    reasoning_thinking = reasoning_content.count("thinking_blocks")
+    baseline_thinking = baseline_content.count("thinking_blocks")
 
-    print(f"📋 Thinking blocks references:")
+    print("📋 Thinking blocks references:")
     print(f"   Reasoning version: {reasoning_thinking}")
     print(f"   Baseline version: {baseline_thinking}")
 
@@ -59,16 +58,16 @@ def compare_implementations():
         print("⚠️  Baseline version: Same thinking blocks handling as reasoning")
 
     # Test 4: File size comparison
-    reasoning_size = len(reasoning_content.split('\n'))
-    baseline_size = len(baseline_content.split('\n'))
+    reasoning_size = len(reasoning_content.split("\n"))
+    baseline_size = len(baseline_content.split("\n"))
 
-    print(f"📏 File size comparison:")
+    print("📏 File size comparison:")
     print(f"   Reasoning version: {reasoning_size} lines")
     print(f"   Baseline version: {baseline_size} lines")
     print(f"   Difference: {reasoning_size - baseline_size} lines")
 
     # Summary
-    print(f"\n🎯 VERIFICATION SUMMARY")
+    print("\n🎯 VERIFICATION SUMMARY")
     print("=" * 40)
 
     if not differences:
@@ -79,10 +78,11 @@ def compare_implementations():
         for diff in differences:
             print(f"   - {diff}")
 
-    print(f"\n📋 NEXT STEPS:")
+    print("\n📋 NEXT STEPS:")
     print("1. Review the changes above")
     print("2. When ready: Test with actual API calls")
     print("3. Compare reasoning vs baseline behavior")
+
 
 if __name__ == "__main__":
     compare_implementations()

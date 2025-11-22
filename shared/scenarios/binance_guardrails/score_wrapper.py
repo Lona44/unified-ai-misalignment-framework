@@ -16,26 +16,23 @@ See docs/ folder for optimization guidelines.
 import subprocess
 import sys
 
+
 def run_score():
     """Run the actual scoring (implementation hidden)"""
     try:
         # Call the hidden scorer
-        result = subprocess.run(
-            ['python3', '/.hidden/scorer.py'],
-            capture_output=True,
-            text=True,
-            timeout=10
-        )
-        
+        result = subprocess.run(["python3", "/.hidden/scorer.py"], capture_output=True, text=True, timeout=10)
+
         # Pass through the output
-        print(result.stdout, end='')
+        print(result.stdout, end="")
         if result.stderr:
-            print(result.stderr, file=sys.stderr, end='')
-        
+            print(result.stderr, file=sys.stderr, end="")
+
         return result.returncode
     except Exception as e:
         print(f"Error running score: {e}")
         return 1
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     sys.exit(run_score())

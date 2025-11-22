@@ -9,16 +9,18 @@ Supports: Enhanced Palisade (GPT-5 + reasoning), Fresh Clone (o3 baseline), Bina
 import argparse
 import json
 import os
+import shutil
 import subprocess
 import sys
 import tempfile
-import shutil
-from pathlib import Path
 from datetime import datetime
-from typing import Dict, Any, Optional, Union
+from pathlib import Path
+from typing import Any
+
 
 class UnsupportedModelError(Exception):
     pass
+
 
 class UnifiedRunner:
     """Unified AI Misalignment Experiment Runner.
@@ -27,7 +29,7 @@ class UnifiedRunner:
     Supports OpenAI models (GPT-5, o3) and Anthropic models (Claude Sonnet, Claude Opus).
     """
 
-    def __init__(self, config_path: Union[str, Path], base_dir: Optional[Union[str, Path]] = None) -> None:
+    def __init__(self, config_path: str | Path, base_dir: str | Path | None = None) -> None:
         """Initialize the unified experiment runner.
 
         Args:
@@ -42,7 +44,7 @@ class UnifiedRunner:
         self.config = self.load_config(config_path)
         self.validate_config()
 
-    def load_config(self, config_path: Union[str, Path]) -> Dict[str, Any]:
+    def load_config(self, config_path: str | Path) -> dict[str, Any]:
         """Load and validate experiment configuration from JSON file.
 
         Args:
@@ -55,12 +57,12 @@ class UnifiedRunner:
             ValueError: If configuration file cannot be loaded or parsed
         """
         try:
-            with open(config_path, 'r') as f:
+            with open(config_path) as f:
                 config = json.load(f)
             print(f"✓ Loaded configuration from {config_path}")
             return config
         except Exception as e:
-            raise ValueError(f"Failed to load configuration: {e}")
+            raise ValueError(f"Failed to load configuration: {e}") from e
 
     def validate_config(self) -> None:
         """Validate configuration against schema and check requirements.
@@ -73,60 +75,68 @@ class UnifiedRunner:
             UnsupportedModelError: If specified model is not supported
         """
         # Validate required fields
-        required_fields = ['experiment', 'model_config']
+        required_fields = ["experiment", "model_config"]
         for field in required_fields:
             if field not in self.config:
                 raise ValueError(f"Missing required field: {field}")
 
         # Validate model
-        model = self.config['model_config']['model']
+        model = self.config["model_config"]["model"]
         valid_models = [
-            'o3', 'gpt-5', 'gpt-5.1',
-            'claude-sonnet-4-20250514', 'claude-sonnet-4-5-20250929',
-            'claude-opus-4-20250514', 'claude-opus-4-1-20250805',
-            'kimi-k2', 'deepseek-r1', 'gemini-2.5', 'gemini-2.5-pro', 'gemini-3-pro'
+            "o3",
+            "gpt-5",
+            "gpt-5.1",
+            "claude-sonnet-4-20250514",
+            "claude-sonnet-4-5-20250929",
+            "claude-opus-4-20250514",
+            "claude-opus-4-1-20250805",
+            "kimi-k2",
+            "deepseek-r1",
+            "gemini-2.5",
+            "gemini-2.5-pro",
+            "gemini-3-pro",
         ]
         if model not in valid_models:
             raise UnsupportedModelError(f"Model {model} not supported. Valid models: {valid_models}")
 
         # Validate API keys based on model
-        if model in ['o3', 'gpt-5', 'gpt-5.1']:
-            if not os.getenv('OPENAI_API_KEY'):
+        if model in ["o3", "gpt-5", "gpt-5.1"]:
+            if not os.getenv("OPENAI_API_KEY"):
                 raise ValueError(f"OPENAI_API_KEY environment variable required for model {model}")
-        elif 'claude' in model:
-            if not os.getenv('ANTHROPIC_API_KEY'):
+        elif "claude" in model:
+            if not os.getenv("ANTHROPIC_API_KEY"):
                 raise ValueError(f"ANTHROPIC_API_KEY environment variable required for model {model}")
-        elif model == 'gemini-3-pro':
+        elif model == "gemini-3-pro":
             # Gemini 3 Pro: Always uses Google native API for both baseline and reasoning
             # Baseline: low thinking + thoughts hidden
             # Reasoning: high thinking (default) + thoughts visible
-            if not os.getenv('GOOGLE_API_KEY'):
+            if not os.getenv("GOOGLE_API_KEY"):
                 raise ValueError(f"GOOGLE_API_KEY environment variable required for {model}")
             # Always need OpenAI key for GPT-5 evaluator
-            if not os.getenv('OPENAI_API_KEY'):
-                raise ValueError(f"OPENAI_API_KEY environment variable required for GPT-5 evaluator")
-        elif model in ['kimi-k2', 'deepseek-r1', 'gemini-2.5', 'gemini-2.5-pro']:
+            if not os.getenv("OPENAI_API_KEY"):
+                raise ValueError("OPENAI_API_KEY environment variable required for GPT-5 evaluator")
+        elif model in ["kimi-k2", "deepseek-r1", "gemini-2.5", "gemini-2.5-pro"]:
             # Other OpenRouter models
-            if not os.getenv('OPENROUTER_API_KEY'):
+            if not os.getenv("OPENROUTER_API_KEY"):
                 raise ValueError(f"OPENROUTER_API_KEY environment variable required for model {model}")
             # Also need OpenAI key for GPT-5 evaluator
-            if not os.getenv('OPENAI_API_KEY'):
-                raise ValueError(f"OPENAI_API_KEY environment variable required for GPT-5 evaluator")
+            if not os.getenv("OPENAI_API_KEY"):
+                raise ValueError("OPENAI_API_KEY environment variable required for GPT-5 evaluator")
 
         # Validate numeric fields
-        max_steps = self.config.get('model_config', {}).get('max_steps', 30)
+        max_steps = self.config.get("model_config", {}).get("max_steps", 30)
         if not isinstance(max_steps, int) or max_steps <= 0:
             raise ValueError(f"max_steps must be a positive integer, got: {max_steps}")
 
         # Validate scenario
-        scenario = self.config.get('experiment', {}).get('scenario', 'binance')
-        valid_scenarios = ['binance', 'numberguess_game']
+        scenario = self.config.get("experiment", {}).get("scenario", "binance")
+        valid_scenarios = ["binance", "numberguess_game"]
         if scenario not in valid_scenarios:
             raise ValueError(f"Supported scenarios: {valid_scenarios}, got: {scenario}")
 
         print("✓ Configuration validation passed")
 
-    def route_experiment(self) -> Dict[str, Any]:
+    def route_experiment(self) -> dict[str, Any]:
         """Route experiment to appropriate implementation based on model and reasoning.
 
         Analyzes the model configuration and reasoning requirements to automatically
@@ -138,27 +148,27 @@ class UnifiedRunner:
         Raises:
             UnsupportedModelError: If model routing logic fails
         """
-        model = self.config['model_config']['model']
-        enable_reasoning = self.config['model_config'].get('enable_reasoning', False)
+        model = self.config["model_config"]["model"]
+        enable_reasoning = self.config["model_config"].get("enable_reasoning", False)
 
         print(f"🎯 Routing experiment: {model} (reasoning: {enable_reasoning})")
 
-        if model in ['o3', 'gpt-5', 'gpt-5.1']:
+        if model in ["o3", "gpt-5", "gpt-5.1"]:
             if enable_reasoning:
                 return self.route_to_openai_reasoning()
             else:
                 return self.route_to_openai_baseline()
-        elif 'claude' in model:
+        elif "claude" in model:
             if enable_reasoning:
                 return self.route_to_anthropic_reasoning()
             else:
                 return self.route_to_anthropic_baseline()
-        elif model == 'gemini-3-pro':
+        elif model == "gemini-3-pro":
             # Gemini 3 Pro: Always uses google_reasoning implementation
             # Baseline: low thinking + thoughts hidden
             # Reasoning: high thinking (default) + thoughts visible
             return self.route_to_google_reasoning()
-        elif model in ['kimi-k2', 'deepseek-r1', 'gemini-2.5', 'gemini-2.5-pro']:
+        elif model in ["kimi-k2", "deepseek-r1", "gemini-2.5", "gemini-2.5-pro"]:
             # Other OpenRouter models - route to openai_reasoning (supports OpenRouter)
             if enable_reasoning:
                 return self.route_to_openai_reasoning()
@@ -170,27 +180,27 @@ class UnifiedRunner:
     def route_to_openai_reasoning(self):
         """Route to OpenAI Reasoning (Responses API + High effort reasoning)."""
         print("📡 Routing to OpenAI Reasoning (Responses API + reasoning)")
-        return self.execute_implementation('openai_reasoning')
+        return self.execute_implementation("openai_reasoning")
 
     def route_to_openai_baseline(self):
         """Route to OpenAI Baseline (Chat API + No reasoning)."""
         print("📡 Routing to OpenAI Baseline (Chat API + no reasoning)")
-        return self.execute_implementation('openai_baseline')
+        return self.execute_implementation("openai_baseline")
 
     def route_to_anthropic_reasoning(self):
         """Route to Anthropic Reasoning (LiteLLM + High effort reasoning)."""
         print("📡 Routing to Anthropic Reasoning (LiteLLM + reasoning)")
-        return self.execute_implementation('anthropic_reasoning')
+        return self.execute_implementation("anthropic_reasoning")
 
     def route_to_anthropic_baseline(self):
         """Route to Anthropic Baseline (LiteLLM + No reasoning)."""
         print("📡 Routing to Anthropic Baseline (LiteLLM + no reasoning)")
-        return self.execute_implementation('anthropic_baseline')
+        return self.execute_implementation("anthropic_baseline")
 
     def route_to_google_reasoning(self):
         """Route to Google Reasoning (Native Generative AI API + thinking mode)."""
         print("📡 Routing to Google Reasoning (Native API + thinking mode)")
-        return self.execute_implementation('google_reasoning')
+        return self.execute_implementation("google_reasoning")
 
     def sanitize_for_docker(self, name: str) -> str:
         """Sanitize name for Docker compatibility by replacing underscores with hyphens.
@@ -201,7 +211,7 @@ class UnifiedRunner:
         Returns:
             Docker-compatible name with hyphens instead of underscores
         """
-        return name.replace('_', '-')
+        return name.replace("_", "-")
 
     def get_docker_asset_type(self, implementation_name: str) -> str:
         """Determine which shared Docker assets to use based on implementation.
@@ -218,12 +228,12 @@ class UnifiedRunner:
         Raises:
             ValueError: If implementation name is not recognized
         """
-        if implementation_name in ['openai_baseline', 'openai_reasoning']:
-            return 'openai'
-        elif implementation_name in ['anthropic_reasoning', 'anthropic_baseline']:
-            return 'anthropic'
-        elif implementation_name == 'google_reasoning':
-            return 'google'
+        if implementation_name in ["openai_baseline", "openai_reasoning"]:
+            return "openai"
+        elif implementation_name in ["anthropic_reasoning", "anthropic_baseline"]:
+            return "anthropic"
+        elif implementation_name == "google_reasoning":
+            return "google"
         else:
             raise ValueError(f"Unknown implementation: {implementation_name}")
 
@@ -252,13 +262,10 @@ class UnifiedRunner:
         print(f"🏗️  Preparing execution environment: {temp_path}")
 
         # Get scenario name from config
-        scenario_name = self.config.get('experiment', {}).get('scenario', 'binance')
+        scenario_name = self.config.get("experiment", {}).get("scenario", "binance")
 
         # Map scenario names to folder names
-        scenario_folder_map = {
-            'binance': 'binance_guardrails',
-            'numberguess_game': 'numberguess_game'
-        }
+        scenario_folder_map = {"binance": "binance_guardrails", "numberguess_game": "numberguess_game"}
         scenario_folder = scenario_folder_map[scenario_name]
 
         # Copy shared scenario files
@@ -314,7 +321,7 @@ class UnifiedRunner:
         print(f"📦 Using shared {asset_type} Docker assets")
 
         # Copy execution files
-        for file in ['docker-compose.yml', 'run.sh']:
+        for file in ["docker-compose.yml", "run.sh"]:
             src_file = impl_dir / file
             if src_file.exists():
                 shutil.copy2(src_file, temp_path / file)
@@ -343,30 +350,30 @@ class UnifiedRunner:
             FileNotFoundError: If base prompt file doesn't exist
             ValueError: If prompt configuration is malformed
         """
-        model = self.config['model_config']['model']
-        enable_reasoning = self.config['model_config'].get('enable_reasoning', False)
+        model = self.config["model_config"]["model"]
+        enable_reasoning = self.config["model_config"].get("enable_reasoning", False)
 
         # Map simplified model names to actual OpenRouter model IDs
         model_mapping = {
-            'kimi-k2': 'moonshotai/kimi-k2-thinking' if enable_reasoning else 'moonshotai/kimi-k2',
-            'deepseek-r1': 'deepseek/deepseek-r1' if enable_reasoning else 'deepseek/deepseek-chat-v3',
-            'gemini-2.5': 'google/gemini-2.5-flash-preview-09-2025',  # Same model, reasoning controlled by parameter
-            'gemini-2.5-pro': 'google/gemini-2.5-pro',  # Most advanced Gemini 2.5 model
-            'gemini-3-pro': 'google/gemini-3-pro-preview'  # Testing: Use OpenRouter for both baseline and reasoning
+            "kimi-k2": "moonshotai/kimi-k2-thinking" if enable_reasoning else "moonshotai/kimi-k2",
+            "deepseek-r1": "deepseek/deepseek-r1" if enable_reasoning else "deepseek/deepseek-chat-v3",
+            "gemini-2.5": "google/gemini-2.5-flash-preview-09-2025",  # Same model, reasoning controlled by parameter
+            "gemini-2.5-pro": "google/gemini-2.5-pro",  # Most advanced Gemini 2.5 model
+            "gemini-3-pro": "google/gemini-3-pro-preview",  # Testing: Use OpenRouter for both baseline and reasoning
         }
 
         # Use mapped model if available, otherwise use original
         actual_model = model_mapping.get(model, model)
 
         # Load base prompt
-        with open(prompt_path, 'r') as f:
+        with open(prompt_path) as f:
             prompt_data = json.load(f)
 
         # Update model
-        prompt_data['model'] = actual_model
+        prompt_data["model"] = actual_model
 
         # Write updated prompt
-        with open(prompt_path, 'w') as f:
+        with open(prompt_path, "w") as f:
             json.dump(prompt_data, f, indent=2)
 
         if actual_model != model:
@@ -374,7 +381,7 @@ class UnifiedRunner:
         else:
             print(f"✓ Updated PROMPT.json with model: {model}")
 
-    def execute_implementation(self, implementation_name: str) -> Dict[str, Any]:
+    def execute_implementation(self, implementation_name: str) -> dict[str, Any]:
         """Execute the selected implementation and return results.
 
         Prepares the execution environment, runs the implementation, and
@@ -394,41 +401,42 @@ class UnifiedRunner:
 
         try:
             # Generate experiment ID
-            experiment_id = self.config['experiment']['id']
+            experiment_id = self.config["experiment"]["id"]
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
             run_id = f"{experiment_id}_{timestamp}"
 
             print(f"🚀 Executing experiment: {run_id}")
 
             # Set execution parameters
-            max_steps = self.config['model_config'].get('max_steps', 30)
-            timeout_minutes = self.config.get('execution', {}).get('timeout_minutes', 30)
+            timeout_minutes = self.config.get("execution", {}).get("timeout_minutes", 30)
 
             # Execute run.sh with metadata environment variables
             env = os.environ.copy()
-            env['RUN_ID'] = run_id
-            env['NO_TIMESTAMP'] = 'true'  # We handle timestamps ourselves
+            env["RUN_ID"] = run_id
+            env["NO_TIMESTAMP"] = "true"  # We handle timestamps ourselves
 
             # Add metadata for display in step logs
-            model = self.config['model_config']['model']
-            env['UNIFIED_MODEL'] = model
-            env['UNIFIED_REASONING'] = 'ENABLED' if self.config['model_config'].get('enable_reasoning', False) else 'DISABLED'
+            model = self.config["model_config"]["model"]
+            env["UNIFIED_MODEL"] = model
+            env["UNIFIED_REASONING"] = (
+                "ENABLED" if self.config["model_config"].get("enable_reasoning", False) else "DISABLED"
+            )
 
             # Create descriptive implementation label based on actual model/provider
-            if model in ['kimi-k2', 'deepseek-r1', 'gemini-2.5', 'gemini-2.5-pro']:
-                impl_label = 'OpenRouter API'
-            elif model.startswith('claude-'):
-                impl_label = 'Anthropic API'
-            elif model in ['gpt-5', 'o3', 'gpt-5.1']:
-                impl_label = 'OpenAI API'
+            if model in ["kimi-k2", "deepseek-r1", "gemini-2.5", "gemini-2.5-pro"]:
+                impl_label = "OpenRouter API"
+            elif model.startswith("claude-"):
+                impl_label = "Anthropic API"
+            elif model in ["gpt-5", "o3", "gpt-5.1"]:
+                impl_label = "OpenAI API"
             else:
-                impl_label = implementation_name.replace('_', ' ').title()
+                impl_label = implementation_name.replace("_", " ").title()
 
-            env['UNIFIED_IMPLEMENTATION'] = impl_label
-            env['UNIFIED_EXPERIMENT_ID'] = self.config['experiment']['id']
-            env['UNIFIED_MAX_STEPS'] = str(self.config['model_config'].get('max_steps', 30))
+            env["UNIFIED_IMPLEMENTATION"] = impl_label
+            env["UNIFIED_EXPERIMENT_ID"] = self.config["experiment"]["id"]
+            env["UNIFIED_MAX_STEPS"] = str(self.config["model_config"].get("max_steps", 30))
 
-            cmd = ['bash', './run.sh']
+            cmd = ["bash", "./run.sh"]
             print(f"💻 Running: {' '.join(cmd)} (timeout: {timeout_minutes}m)")
 
             # Stream output live to terminal while capturing for logs
@@ -440,14 +448,14 @@ class UnifiedRunner:
                 stderr=subprocess.STDOUT,
                 text=True,
                 bufsize=1,
-                universal_newlines=True
+                universal_newlines=True,
             )
 
             output_lines = []
             try:
                 # Stream output live while capturing
                 for line in process.stdout:
-                    print(line, end='')  # Stream to terminal
+                    print(line, end="")  # Stream to terminal
                     output_lines.append(line)  # Capture for logs
 
                 # Wait for process to complete with timeout
@@ -467,7 +475,7 @@ class UnifiedRunner:
                     self.stdout = stdout
                     self.stderr = stderr
 
-            result = ProcessResult(result_returncode, ''.join(output_lines))
+            result = ProcessResult(result_returncode, "".join(output_lines))
 
             # Copy results to permanent location
             output_dir = self.base_dir / "outputs" / run_id
@@ -493,7 +501,7 @@ class UnifiedRunner:
 
     def create_standardized_result(self, output_dir, implementation_name, process_result):
         """Create standardized result format."""
-        experiment_id = self.config['experiment']['id']
+        experiment_id = self.config["experiment"]["id"]
         timestamp = datetime.now().isoformat()
 
         # Try to load result.json if it exists
@@ -501,43 +509,44 @@ class UnifiedRunner:
         experiment_result = {}
         if result_json_path.exists():
             try:
-                with open(result_json_path, 'r') as f:
+                with open(result_json_path) as f:
                     experiment_result = json.load(f)
-            except:
+            except Exception:
                 pass
 
         standardized_result = {
             "metadata": {
                 "experiment_id": experiment_id,
                 "timestamp": timestamp,
-                "model": self.config['model_config']['model'],
+                "model": self.config["model_config"]["model"],
                 "implementation": implementation_name,
-                "reasoning_enabled": self.config['model_config'].get('enable_reasoning', False),
-                "scenario": self.config['experiment']['scenario']
+                "reasoning_enabled": self.config["model_config"].get("enable_reasoning", False),
+                "scenario": self.config["experiment"]["scenario"],
             },
             "execution": {
-                "status": experiment_result.get('status', 'unknown'),
-                "max_steps": self.config['model_config'].get('max_steps', 30),
-                "process_return_code": process_result.returncode
+                "status": experiment_result.get("status", "unknown"),
+                "max_steps": self.config["model_config"].get("max_steps", 30),
+                "process_return_code": process_result.returncode,
             },
             "behavior_analysis": {
-                "evaluation_score": experiment_result.get('evaluation', None),
-                "reasoning_summary": experiment_result.get('reasoning', None)
+                "evaluation_score": experiment_result.get("evaluation", None),
+                "reasoning_summary": experiment_result.get("reasoning", None),
             },
-            "configuration": self.config
+            "configuration": self.config,
         }
 
         # Write standardized result
-        with open(output_dir / "standardized_result.json", 'w') as f:
+        with open(output_dir / "standardized_result.json", "w") as f:
             json.dump(standardized_result, f, indent=2)
 
         print(f"📊 Created standardized result: {output_dir}/standardized_result.json")
 
+
 def main():
-    parser = argparse.ArgumentParser(description='Unified AI Misalignment Experiment Runner')
-    parser.add_argument('config', help='Path to experiment configuration JSON file')
-    parser.add_argument('--base-dir', help='Base directory for unified framework')
-    parser.add_argument('--verbose', '-v', action='store_true', help='Enable verbose output')
+    parser = argparse.ArgumentParser(description="Unified AI Misalignment Experiment Runner")
+    parser.add_argument("config", help="Path to experiment configuration JSON file")
+    parser.add_argument("--base-dir", help="Base directory for unified framework")
+    parser.add_argument("--verbose", "-v", action="store_true", help="Enable verbose output")
 
     args = parser.parse_args()
 
@@ -548,9 +557,9 @@ def main():
         runner = UnifiedRunner(args.config, args.base_dir)
         output_dir = runner.route_experiment()
 
-        print("\n" + "="*60)
+        print("\n" + "=" * 60)
         print("🎉 EXPERIMENT COMPLETED SUCCESSFULLY")
-        print("="*60)
+        print("=" * 60)
         print(f"📁 Results: {output_dir}")
         print(f"📊 Standardized result: {output_dir}/standardized_result.json")
         print(f"📝 Logs: {output_dir}/run.log")
@@ -558,6 +567,7 @@ def main():
     except Exception as e:
         print(f"\n❌ Experiment failed: {e}")
         sys.exit(1)
+
 
 if __name__ == "__main__":
     main()

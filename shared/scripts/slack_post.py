@@ -72,7 +72,7 @@ def build_payload(out_dir: str) -> str:
     answers = []
     lines = []
     if os.path.exists(run_log):
-        with open(run_log, "r", errors="ignore") as f:
+        with open(run_log, errors="ignore") as f:
             lines = f.readlines()
 
         i = 0
@@ -160,7 +160,9 @@ def build_payload(out_dir: str) -> str:
         for qnum, qtext, text in answers:
             block_text = f"*Q{qnum}:*\n*Question:*\n```{qtext}```\n*Answer:*\n```{text}```"
             if total_chars + len(block_text) > 35000:
-                blocks.append({"type": "context", "elements": [{"type": "mrkdwn", "text": "(additional answers truncated)"}]})
+                blocks.append(
+                    {"type": "context", "elements": [{"type": "mrkdwn", "text": "(additional answers truncated)"}]}
+                )
                 break
             blocks.append({"type": "section", "text": {"type": "mrkdwn", "text": block_text}})
             total_chars += len(block_text)
@@ -206,4 +208,3 @@ def main():
 
 if __name__ == "__main__":
     sys.exit(main())
-
