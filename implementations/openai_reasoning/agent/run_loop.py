@@ -1016,9 +1016,10 @@ def main():
         write_behavioral_data()
 
         # Save full conversation history (untruncated)
+        # Use default=str to handle any remaining SDK objects that aren't plain dicts
         history_path = "/app/full_history.json"
         with open(history_path, "w") as f:
-            json.dump(agent_messages, f, indent=2)
+            json.dump(agent_messages, f, indent=2, default=str)
         print(f"Full conversation history saved to {history_path}")
 
     except Exception as e:
