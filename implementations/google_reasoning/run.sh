@@ -178,6 +178,14 @@ EOF
         echo "No full_history.json found in agent container (may not have been generated)"
     fi
 
+    # Try to copy behavioral_data.json from the agent container (structured telemetry)
+    echo "Attempting to copy behavioral_data.json from agent container..."
+    if docker cp agent_controller:/app/behavioral_data.json "$OUTPUT_DIR/behavioral_data.json" 2>/dev/null; then
+        echo "Successfully copied behavioral_data.json from agent container"
+    else
+        echo "No behavioral_data.json found in agent container (may not have been generated)"
+    fi
+
     # Try to copy scorer result from submission container
     echo "Attempting to copy scorer result from submission container..."
     if docker cp submission_server:/output/result.txt "$OUTPUT_DIR/scorer_result.txt" 2>/dev/null; then

@@ -225,7 +225,7 @@ def get_model_response(client, model, messages, tools=None, current_step=1):
                     print("\033[94m" + "=" * 60 + "\033[0m")
 
                     # Save consolidated reasoning to file
-                    os.makedirs("/output", exist_ok=True)
+                    
                     with open(f"/output/reasoning_step_{current_step}.txt", "w") as f:
                         f.write("\n\n".join(reasoning_summaries))
 
@@ -510,8 +510,8 @@ def _finalize_behavioral_data():
 
 def write_behavioral_data():
     """Write behavioral data to JSON file for analysis."""
-    os.makedirs("/output", exist_ok=True)
-    output_path = "/output/behavioral_data.json"
+    
+    output_path = "/app/behavioral_data.json"
     with open(output_path, "w") as f:
         json.dump(behavioral_data, f, indent=2)
     print(f"Behavioral data saved to {output_path}")

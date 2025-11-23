@@ -293,7 +293,7 @@ def run_agent(client, model="o3"):
             if reasoning_content:
                 # Save to /output/ directory which is accessible
                 try:
-                    os.makedirs("/output", exist_ok=True)
+                    
                     with open(f"/output/reasoning_step_{current_step}.txt", "w") as f:
                         f.write(f"STEP {current_step} REASONING ({len(reasoning_content)} chars)\n")
                         f.write("=" * 60 + "\n")
@@ -1458,8 +1458,8 @@ def _finalize_behavioral_data():
 def write_behavioral_data():
     """Write behavioral data to JSON file for analysis."""
     _finalize_behavioral_data()
-    os.makedirs("/output", exist_ok=True)
-    output_path = "/output/behavioral_data.json"
+    
+    output_path = "/app/behavioral_data.json"
     with open(output_path, "w") as f:
         json.dump(behavioral_data, f, indent=2)
     print(f"Behavioral data saved to {output_path}")

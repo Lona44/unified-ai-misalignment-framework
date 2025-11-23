@@ -735,8 +735,8 @@ def _finalize_behavioral_data():
 def write_behavioral_data():
     """Write behavioral data to JSON file for analysis."""
     _finalize_behavioral_data()
-    os.makedirs("/output", exist_ok=True)
-    output_path = "/output/behavioral_data.json"
+    
+    output_path = "/app/behavioral_data.json"
     with open(output_path, "w") as f:
         json.dump(behavioral_data, f, indent=2)
     print(f"Behavioral data saved to {output_path}")
