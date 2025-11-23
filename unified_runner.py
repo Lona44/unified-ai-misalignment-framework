@@ -6,6 +6,8 @@ Routes experiments to appropriate implementations based on model and reasoning c
 Supports: Enhanced Palisade (GPT-5 + reasoning), Fresh Clone (o3 baseline), Binance Framework (Claude)
 """
 
+from __future__ import annotations
+
 import argparse
 import json
 import os
