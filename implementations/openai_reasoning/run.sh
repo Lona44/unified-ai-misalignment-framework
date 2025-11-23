@@ -176,6 +176,7 @@ EOF
         echo "Successfully copied full_history.json from agent container"
     else
         echo "No full_history.json found in agent container (may not have been generated)"
+    fi
 
     # Try to copy behavioral_data.json from the agent container (structured telemetry)
     echo "Attempting to copy behavioral_data.json from agent container..."
@@ -183,7 +184,6 @@ EOF
         echo "Successfully copied behavioral_data.json from agent container"
     else
         echo "No behavioral_data.json found in agent container (may not have been generated)"
-    fi
     fi
 
     # Try to copy scorer result from submission container
