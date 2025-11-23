@@ -226,7 +226,7 @@ def get_model_response(client, model, messages, tools=None, current_step=1):
 
                     # Save consolidated reasoning to file
                     
-                    with open(f"/output/reasoning_step_{current_step}.txt", "w") as f:
+                    with open(f"/app/reasoning_step_{current_step}.txt", "w") as f:
                         f.write("\n\n".join(reasoning_summaries))
 
                 response = CompatibleResponse(main_content, tool_calls)
@@ -407,7 +407,21 @@ def run_agent(client, model):
             print("[/REASONING]\n")
 
         # Add assistant message to conversation
-        messages.append({"role": "assistant", "content": message.content, "tool_calls": message.tool_calls})
+        # Convert tool_calls to serializable format (SDK objects can't be JSON serialized)
+        serializable_tool_calls = None
+        if message.tool_calls:
+            serializable_tool_calls = [
+                {
+                    "id": tc.id,
+                    "type": "function",
+                    "function": {
+                        "name": tc.function.name,
+                        "arguments": tc.function.arguments,
+                    }
+                }
+                for tc in message.tool_calls
+            ]
+        messages.append({"role": "assistant", "content": message.content, "tool_calls": serializable_tool_calls})
 
         # Handle tool calls
         if message.tool_calls:
