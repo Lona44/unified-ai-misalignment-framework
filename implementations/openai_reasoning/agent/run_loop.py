@@ -8,6 +8,19 @@ import textwrap
 import uuid
 
 
+# Global behavioral data collector for structured output
+behavioral_data = {
+    "config": {},  # Will be populated with model settings at runtime
+    "steps": [],
+    "summary": {
+        "total_steps": 0,
+        "total_thinking_tokens": 0,
+        "total_tool_calls": 0,
+        "total_thinking_blocks": 0,
+    },
+}
+
+
 def run_bash_command(command, working_directory=None, timeout=None):
     """Run a bash command using the command client"""
     try:
@@ -217,6 +230,14 @@ def get_model_response(client, model, messages, tools=None, current_step=1):
                         f.write("\n\n".join(reasoning_summaries))
 
                 response = CompatibleResponse(main_content, tool_calls)
+
+                # Build reasoning metadata for behavioral data collection
+                reasoning_metadata = {
+                    "summaries": reasoning_summaries,
+                    "block_count": len(reasoning_summaries),
+                    "tokens": sum(len(s) for s in reasoning_summaries),  # Estimate from chars
+                }
+                return response, reasoning_metadata
             else:
                 print(f"🧠 No output found in {model} Responses API response")
 
@@ -243,6 +264,7 @@ def get_model_response(client, model, messages, tools=None, current_step=1):
                         self.usage = None
 
                 response = CompatibleResponse()
+                return response, {"summaries": [], "block_count": 0, "tokens": 0}
 
         except Exception as e:
             print(f"Error using Responses API for {model}: {e}")
@@ -258,6 +280,7 @@ def get_model_response(client, model, messages, tools=None, current_step=1):
                 call_kwargs["tools"] = tools
 
             response = client.chat.completions.create(**call_kwargs)
+            return response, {"summaries": [], "block_count": 0, "tokens": 0}
     else:
         # Use standard Chat Completions API for other models
         call_kwargs = {
@@ -273,8 +296,7 @@ def get_model_response(client, model, messages, tools=None, current_step=1):
             call_kwargs["extra_body"] = {"reasoning": {"max_tokens": 16000}}  # High reasoning for reasoning mode
 
         response = client.chat.completions.create(**call_kwargs)
-
-    return response
+        return response, {"summaries": [], "block_count": 0, "tokens": 0}
 
 
 def run_agent(client, model):
@@ -289,6 +311,17 @@ def run_agent(client, model):
     user_prompt = prompts.get("user_prompt", "")
 
     print(f"Loaded prompts from PROMPT.json (using model: {model})")
+
+    # Populate behavioral data config
+    is_responses_api = model in ["o3", "gpt-5", "gpt-5.1"]
+    behavioral_data["config"] = {
+        "model": model,
+        "implementation": "openai_reasoning",
+        "reasoning_enabled": True,
+        "api_type": "responses" if is_responses_api else "chat_completions",
+        "reasoning_effort": "high" if is_responses_api else None,
+        "experiment_id": os.environ.get("UNIFIED_EXPERIMENT_ID", "unknown"),
+    }
 
     messages = []
     if system_prompt:
@@ -346,10 +379,22 @@ def run_agent(client, model):
         print(f"\033[93m{'='*60}\033[0m")
 
         # Get model response with reasoning capture
-        response = get_model_response(client, model, messages, tools, current_step)
+        response, reasoning_metadata = get_model_response(client, model, messages, tools, current_step)
+
+        # Initialize step data for behavioral collection
+        step_data = {
+            "step": current_step,
+            "thinking": {
+                "tokens": reasoning_metadata.get("tokens", 0),
+                "blocks": reasoning_metadata.get("summaries", []),
+                "block_count": reasoning_metadata.get("block_count", 0),
+            },
+            "tool_calls": [],
+        }
 
         if not response or not response.choices:
             print("No response received from model")
+            behavioral_data["steps"].append(step_data)
             break
 
         message = response.choices[0].message
@@ -399,12 +444,32 @@ def run_agent(client, model):
                         if result["stderr"]:
                             print(f"STDERR:\n{result['stderr']}")
 
+                    # Collect tool call data for behavioral analysis
+                    step_data["tool_calls"].append({
+                        "tool": function_name,
+                        "args": {"command": command},
+                        "return_code": result.get("returncode"),
+                        "output_snippet": (result.get("stdout", "") or "")[:500],
+                    })
+
                     tool_result = {"tool_call_id": tool_call.id, "role": "tool", "content": json.dumps(result)}
                     tool_results.append(tool_result)
 
                 elif function_name == "terminate":
                     reason = function_args.get("reason", "No reason provided")
                     print(f"\n\033[92m🔚 Agent terminated: {reason}\033[0m")
+
+                    # Collect terminate call
+                    step_data["tool_calls"].append({
+                        "tool": function_name,
+                        "args": {"reason": reason},
+                        "return_code": None,
+                    })
+
+                    # Finalize behavioral data
+                    behavioral_data["steps"].append(step_data)
+                    _finalize_behavioral_data()
+
                     return {"status": "terminated", "step": current_step, "reason": reason, "messages": messages}
 
             # Add tool results to conversation
@@ -415,11 +480,45 @@ def run_agent(client, model):
                 follow_up = f"You have {remaining_steps} steps remaining. Continue your work or use the terminate tool when finished."
                 messages.append({"role": "user", "content": follow_up})
 
+        # Append step data at end of each iteration (unless already appended by terminate)
+        if step_data not in behavioral_data["steps"]:
+            behavioral_data["steps"].append(step_data)
+
     print(f"\n{'='*60}")
     print("Maximum steps reached!")
     print(f"{'='*60}")
 
+    # Finalize behavioral data
+    _finalize_behavioral_data()
+
     return {"status": "max_steps_reached", "step": current_step, "messages": messages}
+
+
+def _finalize_behavioral_data():
+    """Calculate summary statistics for behavioral data."""
+    behavioral_data["summary"]["total_steps"] = len(behavioral_data["steps"])
+    behavioral_data["summary"]["total_thinking_tokens"] = sum(
+        step.get("thinking", {}).get("tokens", 0) for step in behavioral_data["steps"]
+    )
+    behavioral_data["summary"]["total_tool_calls"] = sum(
+        len(step.get("tool_calls", [])) for step in behavioral_data["steps"]
+    )
+    behavioral_data["summary"]["total_thinking_blocks"] = sum(
+        step.get("thinking", {}).get("block_count", 0) for step in behavioral_data["steps"]
+    )
+
+
+def write_behavioral_data():
+    """Write behavioral data to JSON file for analysis."""
+    os.makedirs("/output", exist_ok=True)
+    output_path = "/output/behavioral_data.json"
+    with open(output_path, "w") as f:
+        json.dump(behavioral_data, f, indent=2)
+    print(f"Behavioral data saved to {output_path}")
+    print(f"  Steps: {behavioral_data['summary']['total_steps']}")
+    print(f"  Thinking tokens: {behavioral_data['summary']['total_thinking_tokens']}")
+    print(f"  Thinking blocks: {behavioral_data['summary']['total_thinking_blocks']}")
+    print(f"  Tool calls: {behavioral_data['summary']['total_tool_calls']}")
 
 
 def load_description():
@@ -898,6 +997,9 @@ def main():
         }
 
         write_result(result_data)
+
+        # Write behavioral data for analysis
+        write_behavioral_data()
 
         # Save full conversation history (untruncated)
         history_path = "/app/full_history.json"

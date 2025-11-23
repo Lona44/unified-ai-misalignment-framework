@@ -10,6 +10,19 @@ from google import genai
 from google.genai import types
 
 
+# Global behavioral data collector for structured output
+behavioral_data = {
+    "config": {},  # Will be populated with model settings at runtime
+    "steps": [],
+    "summary": {
+        "total_steps": 0,
+        "total_thinking_tokens": 0,
+        "total_tool_calls": 0,
+        "total_thinking_blocks": 0,
+    },
+}
+
+
 def run_bash_command(command, working_directory=None, timeout=None):
     """Run a bash command using the command client"""
     try:
@@ -165,18 +178,26 @@ def get_model_response(
             for fc in function_calls:
                 print(f"  - {fc.name}({dict(fc.args)})")
 
+        # Build thinking metadata for behavioral data collection
+        thinking_metadata = {
+            "tokens": thinking_tokens,
+            "blocks": thought_summaries,
+            "block_count": len(thought_summaries),
+        }
+
         # Return the full candidate.content object to preserve thought signatures
+        # Also return thinking metadata for behavioral data collection
         if hasattr(response, "candidates") and response.candidates:
-            return response.candidates[0].content
+            return response.candidates[0].content, thinking_metadata
         else:
-            return None
+            return None, thinking_metadata
 
     except Exception as e:
         print(f"Error calling Google Generative AI: {e}")
         import traceback
 
         traceback.print_exc()
-        return None
+        return None, {"tokens": 0, "blocks": [], "block_count": 0}
 
 
 def run_agent(client, model_name, enable_reasoning):
@@ -199,6 +220,19 @@ def run_agent(client, model_name, enable_reasoning):
     print(f"Loaded prompts from PROMPT.json (using model: {model_name})")
     print(f"Reasoning mode: {'ENABLED (high thinking)' if enable_reasoning else 'DISABLED (low thinking)'}")
     print("Note: Gemini 3 Pro always uses thinking - thoughts visible in both modes")
+
+    # Populate behavioral data config
+    behavioral_data["config"] = {
+        "model": model_name,
+        "implementation": "google_reasoning",
+        "reasoning_enabled": enable_reasoning,
+        "thinking_level": "high" if enable_reasoning else "low",
+        "temperature": 1.0,
+        "top_p": 0.95,
+        "top_k": 40,
+        "max_output_tokens": 8192,
+        "experiment_id": os.environ.get("UNIFIED_EXPERIMENT_ID", "unknown"),
+    }
 
     # Store messages in native Google format (list of types.Content objects)
     google_contents = []
@@ -259,13 +293,25 @@ def run_agent(client, model_name, enable_reasoning):
         print(f"\033[93m🔬 Experiment: {unified_exp_id}\033[0m")
         print(f"\033[93m{'='*60}\033[0m")
 
-        # Get model response with reasoning capture (returns native Google Content object)
-        response_content = get_model_response(
+        # Get model response with reasoning capture (returns native Google Content object + thinking metadata)
+        response_content, thinking_metadata = get_model_response(
             client, model_name, google_contents, system_instruction, google_tools, current_step, enable_reasoning
         )
 
+        # Initialize step data for behavioral collection
+        step_data = {
+            "step": current_step,
+            "thinking": {
+                "tokens": thinking_metadata.get("tokens", 0),
+                "blocks": thinking_metadata.get("blocks", []),
+                "block_count": thinking_metadata.get("block_count", 0),
+            },
+            "tool_calls": [],
+        }
+
         if not response_content:
             print("No response received from model")
+            behavioral_data["steps"].append(step_data)
             break
 
         # Append the full response content directly to history (preserves thought signatures!)
@@ -302,6 +348,14 @@ def run_agent(client, model_name, enable_reasoning):
                         if result["stderr"]:
                             print(f"STDERR:\n{result['stderr']}")
 
+                    # Collect tool call data for behavioral analysis
+                    step_data["tool_calls"].append({
+                        "tool": function_name,
+                        "args": {"command": command},
+                        "return_code": result.get("returncode"),
+                        "output_snippet": (result.get("stdout", "") or "")[:500],
+                    })
+
                     # Add function response in native Google format
                     function_responses.append(
                         types.Part(function_response=types.FunctionResponse(name=function_name, response=result))
@@ -310,6 +364,17 @@ def run_agent(client, model_name, enable_reasoning):
                 elif function_name == "terminate":
                     reason = function_args.get("reason", "No reason provided")
                     print(f"\n\033[92m🔚 Agent terminated: {reason}\033[0m")
+
+                    # Collect terminate call
+                    step_data["tool_calls"].append({
+                        "tool": function_name,
+                        "args": {"reason": reason},
+                        "return_code": None,
+                    })
+
+                    # Finalize behavioral data for this step
+                    behavioral_data["steps"].append(step_data)
+                    _finalize_behavioral_data()
 
                     # Convert google_contents to OpenAI format for evaluator
                     messages_for_eval = convert_google_to_openai_for_eval(google_contents, system_instruction)
@@ -329,13 +394,47 @@ def run_agent(client, model_name, enable_reasoning):
                 follow_up = f"You have {remaining_steps} steps remaining. Continue your work or use the terminate tool when finished."
                 google_contents.append(types.Content(role="user", parts=[types.Part(text=follow_up)]))
 
+        # Append step data at end of each iteration (unless already appended by terminate)
+        if step_data not in behavioral_data["steps"]:
+            behavioral_data["steps"].append(step_data)
+
     print(f"\n{'='*60}")
     print("Maximum steps reached!")
     print(f"{'='*60}")
 
+    # Finalize behavioral data
+    _finalize_behavioral_data()
+
     # Convert google_contents to OpenAI format for evaluator
     messages_for_eval = convert_google_to_openai_for_eval(google_contents, system_instruction)
     return {"status": "max_steps_reached", "step": current_step, "messages": messages_for_eval}
+
+
+def _finalize_behavioral_data():
+    """Calculate summary statistics for behavioral data."""
+    behavioral_data["summary"]["total_steps"] = len(behavioral_data["steps"])
+    behavioral_data["summary"]["total_thinking_tokens"] = sum(
+        step.get("thinking", {}).get("tokens", 0) for step in behavioral_data["steps"]
+    )
+    behavioral_data["summary"]["total_tool_calls"] = sum(
+        len(step.get("tool_calls", [])) for step in behavioral_data["steps"]
+    )
+    behavioral_data["summary"]["total_thinking_blocks"] = sum(
+        step.get("thinking", {}).get("block_count", 0) for step in behavioral_data["steps"]
+    )
+
+
+def write_behavioral_data():
+    """Write behavioral data to JSON file for analysis."""
+    os.makedirs("/output", exist_ok=True)
+    output_path = "/output/behavioral_data.json"
+    with open(output_path, "w") as f:
+        json.dump(behavioral_data, f, indent=2)
+    print(f"Behavioral data saved to {output_path}")
+    print(f"  Steps: {behavioral_data['summary']['total_steps']}")
+    print(f"  Thinking tokens: {behavioral_data['summary']['total_thinking_tokens']}")
+    print(f"  Thinking blocks: {behavioral_data['summary']['total_thinking_blocks']}")
+    print(f"  Tool calls: {behavioral_data['summary']['total_tool_calls']}")
 
 
 def convert_google_to_openai_for_eval(google_contents, system_instruction):
@@ -693,6 +792,9 @@ def main():
         }
 
         write_result(result_data)
+
+        # Write behavioral data for analysis
+        write_behavioral_data()
 
         # Save full conversation history (untruncated)
         history_path = "/app/full_history.json"

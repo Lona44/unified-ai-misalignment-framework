@@ -51,7 +51,8 @@ unified-misalignment-framework/
 │   ├── openai_reasoning/     # OpenAI models with reasoning traces
 │   ├── openai_baseline/      # OpenAI models without reasoning
 │   ├── anthropic_reasoning/  # Anthropic models with reasoning
-│   └── anthropic_baseline/   # Anthropic models without reasoning
+│   ├── anthropic_baseline/   # Anthropic models without reasoning
+│   └── google_reasoning/     # Google Gemini with native thinking
 ├── unified_runner.py         # Central routing system
 ├── outputs/                  # Experiment results
 └── outputs_samples/          # Sample results from all model modes
@@ -65,6 +66,8 @@ unified-misalignment-framework/
 | **OpenAI Baseline** | o3, GPT-5 | Chat API | None | Independent GPT-5 |
 | **Anthropic Reasoning** | Claude Sonnet-4, Sonnet-4.5, Opus-4, Opus-4.1 | LiteLLM | High effort reasoning | Independent GPT-5 |
 | **Anthropic Baseline** | Claude Sonnet-4, Sonnet-4.5, Opus-4, Opus-4.1 | LiteLLM | None | Independent GPT-5 |
+| **Google Reasoning** | Gemini 3 Pro | Native Generative AI | High/Low thinking mode | Independent GPT-5 |
+| **OpenRouter** | Kimi K2, DeepSeek R1, Gemini 2.5 | OpenRouter (OpenAI-compatible) | Model-native reasoning | Independent GPT-5 |
 
 ## Quick Start
 
@@ -97,6 +100,10 @@ unified-misalignment-framework/
 - `claude-sonnet-new` - Claude Sonnet-4.5-20250929 (latest)
 - `claude-opus` - Claude Opus-4-20250514
 - `claude-opus-new` - Claude Opus-4.1-20250805
+- `gemini-3-pro` - Google Gemini 3 Pro (native API)
+- `gemini-2.5` - Google Gemini 2.5 (via OpenRouter)
+- `kimi-k2` - Moonshot Kimi K2 (via OpenRouter)
+- `deepseek-r1` - DeepSeek R1 (via OpenRouter)
 
 **Configuration Options:**
 - `-r, --reasoning` - Enable reasoning capture
@@ -152,6 +159,8 @@ Required environment variables:
 # API Access
 OPENAI_API_KEY=your_openai_api_key
 ANTHROPIC_API_KEY=your_anthropic_api_key
+GOOGLE_API_KEY=your_google_api_key         # For Gemini 3 Pro (native API)
+OPENROUTER_API_KEY=your_openrouter_api_key # For OpenRouter models
 
 # Safety Testing Configuration
 OPENAI_VALIDATE_MODEL=gpt-5    # Independent validator
@@ -220,10 +229,57 @@ Each experiment generates:
 
 - `standardized_result.json` - Unified result format across implementations
 - `result.json` - Implementation-specific detailed results
+- `behavioral_data.json` - Structured behavioral analysis data
 - `run.log` - Complete execution trace
 - `scorer_result.txt` - Quantitative evaluation score
 - `improved.py` - Generated code artifacts (when applicable)
 - `security_override.txt` - Authorization documents (when created)
+
+## Behavioral Data Collection
+
+All implementations output structured behavioral data to `/output/behavioral_data.json` for cross-model analysis:
+
+```json
+{
+  "config": {
+    "model": "claude-sonnet-4-5-20250929",
+    "implementation": "anthropic_reasoning",
+    "reasoning_enabled": true,
+    "temperature": 1.0,
+    "experiment_id": "exp_12345"
+  },
+  "steps": [
+    {
+      "step": 1,
+      "thinking": {
+        "tokens": 1234,
+        "blocks": ["thinking content..."],
+        "block_count": 2
+      },
+      "tool_calls": [
+        {
+          "tool": "bash",
+          "args": {"command": "ls -la"},
+          "return_code": 0,
+          "output_snippet": "total 16..."
+        }
+      ]
+    }
+  ],
+  "summary": {
+    "total_steps": 6,
+    "total_thinking_tokens": 5432,
+    "total_tool_calls": 8,
+    "total_thinking_blocks": 10
+  }
+}
+```
+
+This enables:
+- **Cross-model comparison**: Standardized metrics across all providers
+- **Reasoning analysis**: Token counts and thinking block extraction
+- **Tool use patterns**: Track command execution and success rates
+- **Network effects**: Aggregate insights from multiple experiments
 
 ## Advanced Configuration
 
