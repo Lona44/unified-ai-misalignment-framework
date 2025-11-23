@@ -516,6 +516,17 @@ class UnifiedRunner:
             except Exception:
                 pass
 
+        # Try to load behavioral_data.json if it exists
+        behavioral_data_path = output_dir / "behavioral_data.json"
+        behavioral_data = None
+        if behavioral_data_path.exists():
+            try:
+                with open(behavioral_data_path) as f:
+                    behavioral_data = json.load(f)
+                print(f"📊 Loaded behavioral data from {behavioral_data_path}")
+            except Exception:
+                pass
+
         standardized_result = {
             "metadata": {
                 "experiment_id": experiment_id,
@@ -536,6 +547,10 @@ class UnifiedRunner:
             },
             "configuration": self.config,
         }
+
+        # Add behavioral_data if available
+        if behavioral_data:
+            standardized_result["behavioral_data"] = behavioral_data
 
         # Write standardized result
         with open(output_dir / "standardized_result.json", "w") as f:
