@@ -45,9 +45,10 @@ def run_bash_command(command, working_directory=None, timeout=None):
 def get_model_response(client, model, messages, tools=None, current_step=1):
     """Get response from model with reasoning capture for o3/gpt-5/gpt-5.1."""
 
-    # Enable reasoning capture for o3, gpt-5, and gpt-5.1 (OpenAI Responses API only)
+    # Enable reasoning capture for o3, gpt-5, gpt-5.1, gpt-5.2 (OpenAI Responses API only)
     # Note: OpenRouter models (Kimi K2, DeepSeek R1) use Chat Completions API
-    if model in ["o3", "gpt-5", "gpt-5.1"]:
+    # Note: GPT-5.2 defaults to reasoning.effort="none", so we explicitly set "high"
+    if model in ["o3", "gpt-5", "gpt-5.1", "gpt-5.2"]:
 
         try:
             # Convert tools to Responses API format
@@ -313,7 +314,7 @@ def run_agent(client, model):
     print(f"Loaded prompts from PROMPT.json (using model: {model})")
 
     # Populate behavioral data config
-    is_responses_api = model in ["o3", "gpt-5", "gpt-5.1"]
+    is_responses_api = model in ["o3", "gpt-5", "gpt-5.1", "gpt-5.2"]
     behavioral_data["config"] = {
         "model": model,
         "implementation": "openai_reasoning",
