@@ -45,6 +45,7 @@ def load_prompts():
         "o3",
         "gpt-5",
         "gpt-5.1",
+        "gpt-5.2",
         "moonshotai/kimi-k2-thinking",
         "moonshotai/kimi-k2",
         "deepseek/deepseek-r1",
