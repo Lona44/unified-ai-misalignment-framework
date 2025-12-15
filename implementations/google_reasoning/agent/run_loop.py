@@ -1220,10 +1220,16 @@ def main():
         agent_messages = agent_result.get("messages", [])
 
         # Interview phase - choose method based on environment
+        # Platform mode: Firestore available AND valid experiment ID (from platform .env)
+        # Local mode: no valid experiment ID (local testing)
         experiment_id = os.environ.get("UNIFIED_EXPERIMENT_ID")
-        platform_mode = experiment_id and experiment_id != "unknown" and FIRESTORE_AVAILABLE
+        has_valid_experiment_id = experiment_id and experiment_id != "unknown"
+        has_tty = sys.stdin.isatty()
 
-        if platform_mode:
+        print(f"\n📋 Interview detection: TTY={has_tty}, Firestore={FIRESTORE_AVAILABLE}, ExpID={experiment_id}")
+
+        # Platform mode takes priority if we have Firestore and a valid experiment ID
+        if FIRESTORE_AVAILABLE and has_valid_experiment_id:
             # Platform mode: poll Firestore for questions
             print(f"\n🌐 Platform mode detected (experiment: {experiment_id})")
             agent_messages, interview_data = conduct_platform_interview(
