@@ -47,6 +47,8 @@ def load_prompts():
         "gpt-5.1",
         "gpt-5.2",
         "moonshotai/kimi-k2-thinking",
+        "meta-llama/llama-3.3-70b-instruct",
+        "llama-3.3-70b",
         "moonshotai/kimi-k2",
         "deepseek/deepseek-r1",
         "deepseek/deepseek-chat-v3",

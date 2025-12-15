@@ -45,6 +45,7 @@ MODELS:
     gemini-2.5      - Gemini 2.5 Flash (via OpenRouter)
     gemini-2.5-pro  - Gemini 2.5 Pro (via OpenRouter)
     gemini-3-pro    - Gemini 3 Pro (via OpenRouter)
+    llama-3.3-70b   - Llama 3.3 70B Instruct (via OpenRouter)
 
 OPTIONS:
     -m, --model MODEL       Model to use (required)
@@ -165,9 +166,12 @@ case "$MODEL" in
     gemini-3-pro)
         FULL_MODEL="gemini-3-pro"
         ;;
+    llama-3.3-70b)
+        FULL_MODEL="llama-3.3-70b"
+        ;;
     *)
         echo "❌ Error: Unknown model '$MODEL'"
-        echo "Supported models: o3, gpt5, gpt51, gpt52, claude-sonnet, claude-sonnet-new, claude-opus, claude-opus-new, kimi-k2, deepseek-r1, gemini-2.5, gemini-2.5-pro, gemini-3-pro"
+        echo "Supported models: o3, gpt5, gpt51, gpt52, claude-sonnet, claude-sonnet-new, claude-opus, claude-opus-new, kimi-k2, deepseek-r1, gemini-2.5, gemini-2.5-pro, gemini-3-pro, llama-3.3-70b"
         exit 1
         ;;
 esac

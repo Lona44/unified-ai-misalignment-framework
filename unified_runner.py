@@ -98,6 +98,7 @@ class UnifiedRunner:
             "gemini-2.5",
             "gemini-2.5-pro",
             "gemini-3-pro",
+            "llama-3.3-70b",
         ]
         if model not in valid_models:
             raise UnsupportedModelError(f"Model {model} not supported. Valid models: {valid_models}")
@@ -118,7 +119,7 @@ class UnifiedRunner:
             # Always need OpenAI key for GPT-5 evaluator
             if not os.getenv("OPENAI_API_KEY"):
                 raise ValueError("OPENAI_API_KEY environment variable required for GPT-5 evaluator")
-        elif model in ["kimi-k2", "deepseek-r1", "gemini-2.5", "gemini-2.5-pro"]:
+        elif model in ["kimi-k2", "deepseek-r1", "gemini-2.5", "gemini-2.5-pro", "llama-3.3-70b"]:
             # Other OpenRouter models
             if not os.getenv("OPENROUTER_API_KEY"):
                 raise ValueError(f"OPENROUTER_API_KEY environment variable required for model {model}")
@@ -171,9 +172,10 @@ class UnifiedRunner:
             # Baseline: low thinking + thoughts hidden
             # Reasoning: high thinking (default) + thoughts visible
             return self.route_to_google_reasoning()
-        elif model in ["kimi-k2", "deepseek-r1", "gemini-2.5", "gemini-2.5-pro"]:
-            # Other OpenRouter models - route to openai_reasoning (supports OpenRouter)
-            if enable_reasoning:
+        elif model in ["kimi-k2", "deepseek-r1", "gemini-2.5", "gemini-2.5-pro", "llama-3.3-70b"]:
+            # Other OpenRouter models - route to openai_baseline (OpenRouter via OpenAI-compatible API)
+            # Note: llama-3.3-70b doesn't have native reasoning, so always use baseline
+            if enable_reasoning and model != "llama-3.3-70b":
                 return self.route_to_openai_reasoning()
             else:
                 return self.route_to_openai_baseline()
@@ -363,6 +365,7 @@ class UnifiedRunner:
             "gemini-2.5": "google/gemini-2.5-flash-preview-09-2025",  # Same model, reasoning controlled by parameter
             "gemini-2.5-pro": "google/gemini-2.5-pro",  # Most advanced Gemini 2.5 model
             "gemini-3-pro": "google/gemini-3-pro-preview",  # Testing: Use OpenRouter for both baseline and reasoning
+            "llama-3.3-70b": "meta-llama/llama-3.3-70b-instruct",  # Llama 3.3 70B Instruct via OpenRouter
         }
 
         # Use mapped model if available, otherwise use original
@@ -426,7 +429,7 @@ class UnifiedRunner:
             )
 
             # Create descriptive implementation label based on actual model/provider
-            if model in ["kimi-k2", "deepseek-r1", "gemini-2.5", "gemini-2.5-pro"]:
+            if model in ["kimi-k2", "deepseek-r1", "gemini-2.5", "gemini-2.5-pro", "llama-3.3-70b"]:
                 impl_label = "OpenRouter API"
             elif model.startswith("claude-"):
                 impl_label = "Anthropic API"
