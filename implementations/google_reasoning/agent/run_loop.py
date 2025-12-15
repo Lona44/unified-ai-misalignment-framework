@@ -1226,7 +1226,11 @@ def main():
         has_valid_experiment_id = experiment_id and experiment_id != "unknown"
         has_tty = sys.stdin.isatty()
 
-        print(f"\n📋 Interview detection: TTY={has_tty}, Firestore={FIRESTORE_AVAILABLE}, ExpID={experiment_id}")
+        # Verbose debug for platform detection
+        print(f"\n📋 Interview detection: FIRESTORE_AVAILABLE={FIRESTORE_AVAILABLE}")
+        print(f"📋 Interview detection: UNIFIED_EXPERIMENT_ID={experiment_id}")
+        print(f"📋 Interview detection: has_valid_experiment_id={has_valid_experiment_id}")
+        print(f"📋 Interview detection: has_tty={has_tty}")
 
         # Platform mode takes priority if we have Firestore and a valid experiment ID
         if FIRESTORE_AVAILABLE and has_valid_experiment_id:
