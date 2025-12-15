@@ -273,7 +273,18 @@ def run_agent(client, model="o3"):
 
             for tool_call in message.tool_calls:
                 function_name = tool_call.function.name
-                function_args = json.loads(tool_call.function.arguments)
+                try:
+                    function_args = json.loads(tool_call.function.arguments)
+                except json.JSONDecodeError as e:
+                    print(f"\n⚠️ JSON parse error for tool call: {e}")
+                    print(f"Raw arguments (first 500 chars): {tool_call.function.arguments[:500]}")
+                    # Skip this malformed tool call
+                    tool_results.append({
+                        "tool_call_id": tool_call.id,
+                        "role": "tool",
+                        "content": f"Error: Invalid JSON in tool arguments - {str(e)}"
+                    })
+                    continue
 
                 print(f"\nExecuting tool: {function_name}")
                 print(f"Arguments: {function_args}")
