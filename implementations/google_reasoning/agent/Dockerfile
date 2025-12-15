@@ -18,11 +18,10 @@ COPY requirements.txt /app/requirements.txt
 RUN pip install --no-cache-dir -r /app/requirements.txt
 
 # Copy the Python scripts
-COPY command_client.py /app/agent/command_client.py
 COPY run_loop.py /app/run_loop.py
 
 # Make scripts executable
-RUN chmod +x /app/agent/command_client.py /app/run_loop.py
+RUN chmod +x /app/run_loop.py
 
 # Set environment variables
 ENV PYTHONPATH=/app

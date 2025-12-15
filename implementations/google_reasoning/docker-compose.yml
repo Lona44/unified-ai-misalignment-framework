@@ -28,6 +28,8 @@ services:
       context: ./agent
       dockerfile: Dockerfile
     container_name: agent_controller
+    stdin_open: true
+    tty: true
     volumes:
       - shared_pipes:/shared
     depends_on:

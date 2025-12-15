@@ -1,17 +1,18 @@
 #!/bin/bash
 
 # Define a timeout function that tries multiple approaches
+# Uses --foreground flag to allow proper TTY handling for interactive docker containers
 multiplatform_timeout() {
     # Check if 'timeout' command is available (standard on Linux)
     if command -v timeout >/dev/null 2>&1; then
-        command timeout -k 60 "$@"
+        command timeout --foreground -k 60 "$@"
     # Check if 'gtimeout' is available (macOS with coreutils)
     elif command -v gtimeout >/dev/null 2>&1; then
-        gtimeout -k 60 "$@"
+        gtimeout --foreground -k 60 "$@"
     else
         echo "WARNING: Neither 'timeout' nor 'gtimeout' command found. Falling back to Perl implementation." >&2
         echo "         Timeout behavior may not exactly match that of the submission server." >&2
-        
+
         # Use perl with proper signal handling
         perl -e 'alarm shift; exec @ARGV' "$@"
     fi
@@ -109,7 +110,15 @@ if [ -f .env ]; then
     export $(cat .env | grep -v '^#' | xargs)
 fi
 
-# Start logging - capture ALL output from this point forward
+# Export the submission folder path for docker-compose
+# Note: We need to handle both relative and absolute paths
+# Convert to absolute path for docker-compose
+export SUBMISSION_FOLDER=$(realpath "$SUBMISSION_FOLDER_PATH")
+# Set Docker Compose project name (strip trailing underscores to avoid invalid image names)
+PROJECT_NAME=$(basename "$(pwd)" | sed "s/_*$//")
+export COMPOSE_PROJECT_NAME="$PROJECT_NAME"
+
+# Start logging header
 {
     echo "Running submission from: $SUBMISSION_FOLDER_PATH"
     echo "Submission folder name: $SUBMISSION_FOLDER_NAME"
@@ -117,21 +126,36 @@ fi
     echo "Log file: $LOG_FILE"
     echo "Remove images after execution: $REMOVE_IMAGES"
     echo "=================================="
+} 2>&1 | tee "$LOG_FILE"
 
-    # Export the submission folder path for docker-compose
-    # Note: We need to handle both relative and absolute paths
-    # Convert to absolute path for docker-compose
-    export SUBMISSION_FOLDER=$(realpath "$SUBMISSION_FOLDER_PATH")
-    # Set Docker Compose project name (strip trailing underscores to avoid invalid image names)
-    PROJECT_NAME=$(basename "$(pwd)" | sed "s/_*$//")
-    export COMPOSE_PROJECT_NAME="$PROJECT_NAME"
+# Build images first
+echo "Building Docker images..." | tee -a "$LOG_FILE"
+docker compose build 2>&1 | tee -a "$LOG_FILE"
 
-    # Run docker-compose with timeout (30 minutes = 1800 seconds)
-    echo "Starting docker-compose with 30 minute timeout..."
-    multiplatform_timeout 1800 docker compose up --build --abort-on-container-exit
+# Start submission service in background
+echo "Starting submission server..." | tee -a "$LOG_FILE"
+docker compose up -d submission 2>&1 | tee -a "$LOG_FILE"
 
-    DOCKER_EXIT_CODE=$?
+# Wait for submission to be healthy
+echo "Waiting for submission server to be healthy..." | tee -a "$LOG_FILE"
+for i in {1..30}; do
+    if docker compose exec -T submission test -p /shared/command_pipe -a -p /shared/response_pipe 2>/dev/null; then
+        echo "Submission server is ready" | tee -a "$LOG_FILE"
+        break
+    fi
+    sleep 2
+done
 
+# Run agent interactively with timeout (30 minutes = 1800 seconds)
+# This allows stdin for post-hoc interview
+# Note: Running without output redirection to preserve TTY for interactive interview
+# Agent output is still visible on terminal but not captured to log file during this phase
+echo "Starting agent with 30 minute timeout (interactive mode)..." | tee -a "$LOG_FILE"
+multiplatform_timeout 1800 docker compose run -i --rm agent
+DOCKER_EXIT_CODE=$?
+
+# Continue with logging block for cleanup
+{
     if [ $DOCKER_EXIT_CODE -eq 124 ] || [ $DOCKER_EXIT_CODE -eq 142 ]; then
         echo "Docker-compose execution timed out after 30 minutes."
     elif [ $DOCKER_EXIT_CODE -eq 0 ]; then
@@ -178,12 +202,14 @@ EOF
         echo "No full_history.json found in agent container (may not have been generated)"
     fi
 
-    # Try to copy behavioral_data.json from the agent container (structured telemetry)
-    echo "Attempting to copy behavioral_data.json from agent container..."
+    # Try to copy behavioral_data.json from the agent container or shared volume
+    echo "Attempting to copy behavioral_data.json..."
     if docker cp agent_controller:/app/behavioral_data.json "$OUTPUT_DIR/behavioral_data.json" 2>/dev/null; then
         echo "Successfully copied behavioral_data.json from agent container"
+    elif docker cp submission_server:/shared/behavioral_data.json "$OUTPUT_DIR/behavioral_data.json" 2>/dev/null; then
+        echo "Successfully copied behavioral_data.json from shared volume"
     else
-        echo "No behavioral_data.json found in agent container (may not have been generated)"
+        echo "No behavioral_data.json found (may not have been generated)"
     fi
 
     # Try to copy scorer result from submission container
@@ -228,4 +254,4 @@ EOF
     echo "=================================="
     echo "Submission execution completed."
     echo "Results saved to: $OUTPUT_DIR"
-} 2>&1 | tee "$LOG_FILE"
+} 2>&1 | tee -a "$LOG_FILE"

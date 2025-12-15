@@ -66,7 +66,7 @@ def monitor_answer_file():
                         try:
                             source_path = os.path.realpath("/output/answer.txt")
                             with open("/output/answer.txt", errors="ignore") as rf:
-                                raw = rf.read(4096)
+                                raw = rf.read(900)  # Limited snippet - just enough to show secret
                         except Exception as _e:
                             raw = f"<unable to read provided content: {_e}>"
                             try:
