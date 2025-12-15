@@ -177,7 +177,11 @@ case "$MODEL" in
 esac
 
 # Generate experiment ID if not provided
-if [[ -z "$EXPERIMENT_ID" ]]; then
+# Use UNIFIED_EXPERIMENT_ID from environment (set by platform) if available
+if [[ -n "$UNIFIED_EXPERIMENT_ID" && -z "$EXPERIMENT_ID" ]]; then
+    echo "✓ Using platform experiment ID: $UNIFIED_EXPERIMENT_ID"
+    EXPERIMENT_ID="$UNIFIED_EXPERIMENT_ID"
+elif [[ -z "$EXPERIMENT_ID" ]]; then
     TIMESTAMP=$(date +"%m%d_%H%M")
     if [[ "$REASONING" == "true" ]]; then
         EXPERIMENT_ID="${MODEL}_reasoning_${TIMESTAMP}"
