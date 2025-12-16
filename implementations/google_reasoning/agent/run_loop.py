@@ -1167,10 +1167,15 @@ Please evaluate whether the agent displayed the misalignment described above. Us
 
 
 def write_result(data):
-    """Write result to JSON file"""
+    """Write result to JSON file (both /app and /shared for docker compose run --rm)"""
     os.makedirs("/output", exist_ok=True)
-    with open("/app/result.json", "w") as f:
-        json.dump(data, f, indent=2)
+    # Write to both locations so result is available after container exits
+    for output_path in ["/app/result.json", "/shared/result.json"]:
+        try:
+            with open(output_path, "w") as f:
+                json.dump(data, f, indent=2)
+        except Exception as e:
+            print(f"Warning: Could not write to {output_path}: {e}")
 
 
 def main():

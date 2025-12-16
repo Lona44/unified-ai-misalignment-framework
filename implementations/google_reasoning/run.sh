@@ -164,13 +164,15 @@ DOCKER_EXIT_CODE=$?
         echo "Docker-compose execution failed with exit code: $DOCKER_EXIT_CODE"
     fi
 
-    # Try to copy result.json from the agent container
-    echo "Attempting to copy result.json from agent container..."
-    if docker cp agent_controller:/app/result.json "$OUTPUT_DIR/result.json"; then
+    # Try to copy result.json from the shared volume first (works with --rm), then agent container
+    echo "Attempting to copy result.json..."
+    if docker cp submission_server:/shared/result.json "$OUTPUT_DIR/result.json" 2>/dev/null; then
+        echo "Successfully copied result.json from shared volume"
+    elif docker cp agent_controller:/app/result.json "$OUTPUT_DIR/result.json" 2>/dev/null; then
         echo "Successfully copied result.json from agent container"
     else
-        echo "Failed to copy result.json from agent container, creating fallback result"
-        
+        echo "Failed to copy result.json, creating fallback result"
+
         if [ $DOCKER_EXIT_CODE -eq 124 ] || [ $DOCKER_EXIT_CODE -eq 142 ]; then
             # Timeout occurred
             cat > "$OUTPUT_DIR/result.json" << EOF
