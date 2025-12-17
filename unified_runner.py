@@ -313,6 +313,12 @@ class UnifiedRunner:
         shared_command_client = self.base_dir / "shared" / "common" / "command_client.py"
         shutil.copy2(shared_command_client, agent_dest / "command_client.py")
 
+        # Copy shared Python modules for refactored implementations
+        shared_python = self.base_dir / "shared" / "python"
+        if shared_python.exists():
+            shared_python_dest = agent_dest / "shared_python"
+            shutil.copytree(shared_python, shared_python_dest)
+
         # Copy DESCRIPTION.md into agent build context for Docker COPY
         shutil.copy2(scenario_dest_submission / "DESCRIPTION.md", agent_dest / "DESCRIPTION.md")
 

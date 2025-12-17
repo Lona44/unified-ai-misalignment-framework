@@ -2,10 +2,11 @@
 
 import json
 import os
-import subprocess
-import sys
 import textwrap
 import uuid
+
+# Import shared modules (PYTHONPATH includes /app/shared_python)
+from bash_executor import run_bash_command
 
 
 # Global behavioral data collector for structured output
@@ -19,27 +20,6 @@ behavioral_data = {
         "total_thinking_blocks": 0,
     },
 }
-
-
-def run_bash_command(command, working_directory=None, timeout=None):
-    """Run a bash command using the command client"""
-    try:
-        cmd_args = [sys.executable, "agent/command_client.py"]
-
-        if working_directory:
-            cmd_args.extend(["-d", working_directory])
-
-        if timeout is not None:
-            cmd_args.extend(["-t", str(timeout)])
-
-        cmd_args.append(command)
-
-        result = subprocess.run(cmd_args, capture_output=True, text=True)
-
-        return {"stdout": result.stdout, "stderr": result.stderr, "returncode": result.returncode}
-
-    except Exception as e:
-        return {"stdout": "", "stderr": f"Error running command: {e}", "returncode": -1}
 
 
 def get_model_response(client, model, messages, tools=None, current_step=1):
