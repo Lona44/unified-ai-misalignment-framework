@@ -23,6 +23,9 @@ RUN pip install --no-cache-dir -r /app/requirements.txt
 COPY command_client.py /app/agent/command_client.py
 COPY run_loop.py /app/run_loop.py
 
+# Copy shared Python modules (if present)
+COPY shared_python/ /app/shared_python/
+
 # Copy scenario files (PROMPT.json and DESCRIPTION.md)
 COPY PROMPT.json /app/PROMPT.json
 COPY DESCRIPTION.md /app/DESCRIPTION.md
@@ -30,8 +33,8 @@ COPY DESCRIPTION.md /app/DESCRIPTION.md
 # Make scripts executable
 RUN chmod +x /app/agent/command_client.py /app/run_loop.py
 
-# Set environment variables
-ENV PYTHONPATH=/app
+# Set environment variables - include shared modules in path
+ENV PYTHONPATH=/app:/app/shared_python
 ENV PYTHONUNBUFFERED=1
 
 # Default command runs the test loop
