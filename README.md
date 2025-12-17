@@ -4,7 +4,7 @@ A comprehensive system for systematic AI safety testing across multiple model im
 
 ## Initial Results
 
-This repository includes sample experiment outputs from all supported models in `outputs_samples/`. Preliminary findings from single-run experiments show:
+This repository includes sample experiment outputs in `outputs_samples/` from early experiments. Preliminary findings from single-run experiments show:
 
 | Model | Reasoning Mode | Baseline Mode |
 |-------|---------------|---------------|
@@ -40,10 +40,13 @@ This range validates that the test neither trivially passes all models nor artif
 ```
 unified-misalignment-framework/
 ├── configs/                  # Experiment configurations
-├── shared/                   # Shared resources (60% of codebase)
+├── shared/                   # Shared resources
 │   ├── scenarios/            # Testing scenarios
 │   │   ├── binance_guardrails/    # Financial security scenario
 │   │   └── numberguess_game/      # Ethical constraint scenario
+│   ├── python/               # Shared Python modules
+│   │   ├── bash_executor.py       # Command execution layer
+│   │   └── behavioral_data.py     # Behavioral data collection
 │   ├── scripts/slack_post.py      # Notification system
 │   ├── common/command_client.py   # Communication layer
 │   └── docker/               # Containerization assets
@@ -55,19 +58,19 @@ unified-misalignment-framework/
 │   └── google_reasoning/     # Google Gemini with native thinking
 ├── unified_runner.py         # Central routing system
 ├── outputs/                  # Experiment results
-└── outputs_samples/          # Sample results from all model modes
+└── outputs_samples/          # Sample results from initial experiments
 ```
 
 ## Supported Models
 
 | Implementation | Models | API Interface | Reasoning | Validation/Evaluation |
 |----------------|---------|---------------|-----------|----------------------|
-| **OpenAI Reasoning** | GPT-5, o3 | Responses API | High effort reasoning traces | Independent GPT-5 |
-| **OpenAI Baseline** | o3, GPT-5 | Chat API | None | Independent GPT-5 |
+| **OpenAI Reasoning** | GPT-5, GPT-5.1, GPT-5.2, o3 | Responses API | High effort reasoning traces | Independent GPT-5 |
+| **OpenAI Baseline** | GPT-5, GPT-5.1, GPT-5.2, o3 | Chat API | None | Independent GPT-5 |
 | **Anthropic Reasoning** | Claude Sonnet-4, Sonnet-4.5, Opus-4, Opus-4.1 | LiteLLM | High effort reasoning | Independent GPT-5 |
 | **Anthropic Baseline** | Claude Sonnet-4, Sonnet-4.5, Opus-4, Opus-4.1 | LiteLLM | None | Independent GPT-5 |
 | **Google Reasoning** | Gemini 3 Pro | Native Generative AI | High/Low thinking mode | Independent GPT-5 |
-| **OpenRouter** | Kimi K2, DeepSeek R1, Gemini 2.5 | OpenRouter (OpenAI-compatible) | Model-native reasoning | Independent GPT-5 |
+| **OpenRouter** | Kimi K2, DeepSeek R1, Gemini 2.5, Gemini 2.5 Pro, Llama 3.3 70B | OpenRouter (OpenAI-compatible) | Model-native reasoning | Independent GPT-5 |
 
 ## Quick Start
 
@@ -201,16 +204,14 @@ The framework implements independent validation and evaluation to prevent self-a
 
 ```python
 # Test subject routing
-if model in ['o3', 'gpt-5']:
-    if enable_reasoning:
-        → OpenAI Reasoning Implementation
-    else:
-        → OpenAI Baseline Implementation
+if model in ['o3', 'gpt-5', 'gpt-5.1', 'gpt-5.2']:
+    → OpenAI Implementation (reasoning or baseline)
 elif 'claude' in model:
-    if enable_reasoning:
-        → Anthropic Reasoning Implementation
-    else:
-        → Anthropic Baseline Implementation
+    → Anthropic Implementation (reasoning or baseline)
+elif model == 'gemini-3-pro':
+    → Google Reasoning Implementation (native API)
+elif model in ['kimi-k2', 'deepseek-r1', 'gemini-2.5', 'gemini-2.5-pro', 'llama-3.3-70b']:
+    → OpenRouter Implementation (OpenAI-compatible API)
 
 # Safety validation (always independent)
 validator_model = OPENAI_VALIDATE_MODEL or "gpt-5"
