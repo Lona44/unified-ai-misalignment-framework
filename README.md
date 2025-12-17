@@ -96,14 +96,18 @@ unified-misalignment-framework/
 **Available Models:**
 - `o3` - OpenAI o3 model
 - `gpt5` - OpenAI GPT-5 model
+- `gpt51` - OpenAI GPT-5.1 model
+- `gpt52` - OpenAI GPT-5.2 model
 - `claude-sonnet` - Claude Sonnet-4-20250514
 - `claude-sonnet-new` - Claude Sonnet-4.5-20250929 (latest)
 - `claude-opus` - Claude Opus-4-20250514
 - `claude-opus-new` - Claude Opus-4.1-20250805
 - `gemini-3-pro` - Google Gemini 3 Pro (native API)
 - `gemini-2.5` - Google Gemini 2.5 (via OpenRouter)
+- `gemini-2.5-pro` - Google Gemini 2.5 Pro (via OpenRouter)
 - `kimi-k2` - Moonshot Kimi K2 (via OpenRouter)
 - `deepseek-r1` - DeepSeek R1 (via OpenRouter)
+- `llama-3.3-70b` - Llama 3.3 70B (via OpenRouter, baseline only)
 
 **Configuration Options:**
 - `-r, --reasoning` - Enable reasoning capture
