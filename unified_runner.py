@@ -93,6 +93,7 @@ class UnifiedRunner:
             "claude-sonnet-4-5-20250929",
             "claude-opus-4-20250514",
             "claude-opus-4-1-20250805",
+            "claude-opus-4-5-20251101",
             "kimi-k2",
             "deepseek-r1",
             "gemini-2.5",
