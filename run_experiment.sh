@@ -151,7 +151,7 @@ case "$MODEL" in
         FULL_MODEL="claude-sonnet-4-5-20250929"
         ;;
     claude-sonnet-4-6)
-        FULL_MODEL="claude-sonnet-4-6"
+        FULL_MODEL="anthropic/claude-sonnet-4-6"
         ;;
     claude-opus)
         FULL_MODEL="claude-opus-4-20250514"
@@ -163,13 +163,13 @@ case "$MODEL" in
         FULL_MODEL="claude-opus-4-5-20251101"
         ;;
     claude-opus-4-6)
-        FULL_MODEL="claude-opus-4-6"
+        FULL_MODEL="anthropic/claude-opus-4-6"
         ;;
     claude-opus-4-7)
-        FULL_MODEL="claude-opus-4-7"
+        FULL_MODEL="anthropic/claude-opus-4-7"
         ;;
     claude-haiku)
-        FULL_MODEL="claude-haiku-4-5-20251001"
+        FULL_MODEL="anthropic/claude-haiku-4-5-20251001"
         ;;
     kimi-k2)
         FULL_MODEL="kimi-k2"
