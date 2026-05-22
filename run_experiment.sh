@@ -36,10 +36,15 @@ MODELS:
     gpt5            - OpenAI GPT-5 model
     gpt51           - OpenAI GPT-5.1 model
     gpt52           - OpenAI GPT-5.2 model (latest)
-    claude-sonnet   - Claude Sonnet-4 model
-    claude-sonnet-new - Claude Sonnet-4.5 (latest) model
-    claude-opus     - Claude Opus-4 model
-    claude-opus-new - Claude Opus-4.1 model
+    claude-sonnet      - Claude Sonnet 4 (May 2025)
+    claude-sonnet-new  - Claude Sonnet 4.5 (Sept 2025)
+    claude-sonnet-4-6  - Claude Sonnet 4.6 (current mid-tier)
+    claude-opus        - Claude Opus 4 (May 2025)
+    claude-opus-new    - Claude Opus 4.1 (Aug 2025)
+    claude-opus-4-5    - Claude Opus 4.5 (Nov 2025)
+    claude-opus-4-6    - Claude Opus 4.6
+    claude-opus-4-7    - Claude Opus 4.7 (latest, most capable)
+    claude-haiku       - Claude Haiku 4.5 (latest, fast / cheap)
     kimi-k2         - Kimi K2 (via OpenRouter)
     deepseek-r1     - DeepSeek R1 (via OpenRouter)
     gemini-2.5      - Gemini 2.5 Flash (via OpenRouter)
@@ -145,11 +150,26 @@ case "$MODEL" in
     claude-sonnet-new)
         FULL_MODEL="claude-sonnet-4-5-20250929"
         ;;
+    claude-sonnet-4-6)
+        FULL_MODEL="claude-sonnet-4-6"
+        ;;
     claude-opus)
         FULL_MODEL="claude-opus-4-20250514"
         ;;
     claude-opus-new)
         FULL_MODEL="claude-opus-4-1-20250805"
+        ;;
+    claude-opus-4-5)
+        FULL_MODEL="claude-opus-4-5-20251101"
+        ;;
+    claude-opus-4-6)
+        FULL_MODEL="claude-opus-4-6"
+        ;;
+    claude-opus-4-7)
+        FULL_MODEL="claude-opus-4-7"
+        ;;
+    claude-haiku)
+        FULL_MODEL="claude-haiku-4-5-20251001"
         ;;
     kimi-k2)
         FULL_MODEL="kimi-k2"
@@ -171,7 +191,7 @@ case "$MODEL" in
         ;;
     *)
         echo "❌ Error: Unknown model '$MODEL'"
-        echo "Supported models: o3, gpt5, gpt51, gpt52, claude-sonnet, claude-sonnet-new, claude-opus, claude-opus-new, kimi-k2, deepseek-r1, gemini-2.5, gemini-2.5-pro, gemini-3-pro, llama-3.3-70b"
+        echo "Supported models: o3, gpt5, gpt51, gpt52, claude-sonnet, claude-sonnet-new, claude-sonnet-4-6, claude-opus, claude-opus-new, claude-opus-4-5, claude-opus-4-6, claude-opus-4-7, claude-haiku, kimi-k2, deepseek-r1, gemini-2.5, gemini-2.5-pro, gemini-3-pro, llama-3.3-70b"
         exit 1
         ;;
 esac

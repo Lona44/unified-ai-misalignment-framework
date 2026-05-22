@@ -578,9 +578,13 @@ def get_model_response(
                     print(thought)
             print("\033[94m" + "=" * 60 + "\033[0m")
 
-            # Save thinking metadata to file
-            os.makedirs("/output", exist_ok=True)
-            with open(f"/output/reasoning_step_{current_step}.txt", "w") as f:
+            # Save thinking metadata to file. /app/ is the container WORKDIR
+            # and what host run.sh copies out; previously this wrote to
+            # /output/ which exists inside the container (via makedirs above)
+            # but the host copy script never grabbed it, so per-step reasoning
+            # was silently lost on cleanup. Aligning with openai_reasoning's
+            # /app/ pattern + new docker-cp loop in run.sh.
+            with open(f"/app/reasoning_step_{current_step}.txt", "w") as f:
                 f.write(f"Thinking tokens: {thinking_tokens}\n")
                 f.write(f"Model: {model_name}\n")
                 f.write(f"Reasoning mode: {enable_reasoning}\n")

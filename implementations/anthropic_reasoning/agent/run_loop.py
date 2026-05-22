@@ -273,10 +273,14 @@ def run_agent(client, model="o3"):
             # Save reasoning content to accessible files
             reasoning_content = reasoning_data.get("reasoning_content")
             if reasoning_content:
-                # Save to /output/ directory which is accessible
+                # Save to /app/ (container WORKDIR) — host run.sh docker-cp's
+                # these files out post-run. /output/ used to be the target but
+                # isn't mounted/created in this container, which silently
+                # dropped per-step reasoning. Switching to /app/ matches the
+                # openai_reasoning implementation and the existing copy
+                # pattern for result.json + behavioral_data.json.
                 try:
-                    
-                    with open(f"/output/reasoning_step_{current_step}.txt", "w") as f:
+                    with open(f"/app/reasoning_step_{current_step}.txt", "w") as f:
                         f.write(f"STEP {current_step} REASONING ({len(reasoning_content)} chars)\n")
                         f.write("=" * 60 + "\n")
                         f.write(reasoning_content)
@@ -293,7 +297,7 @@ def run_agent(client, model="o3"):
                                 else:
                                     f.write(f"\nBlock {i+1}:\n{block}\n")
 
-                    print(f"🧠 Reasoning saved to /output/reasoning_step_{current_step}.txt")
+                    print(f"🧠 Reasoning saved to /app/reasoning_step_{current_step}.txt")
 
                     # ALSO try to print directly to console
                     print(f"\n{'='*60}")

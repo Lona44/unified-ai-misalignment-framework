@@ -186,6 +186,18 @@ EOF
         echo "No behavioral_data.json found in agent container (may not have been generated)"
     fi
 
+    # Try to copy per-step reasoning files (one per agent step, see run_loop.py).
+    # MAX_STEPS isn't easily reachable here; iterate to a generous upper bound
+    # and let docker cp fail silently for steps that didn't generate a file.
+    echo "Attempting to copy per-step reasoning files from agent container..."
+    reasoning_copied=0
+    for i in $(seq 1 50); do
+        if docker cp "agent_controller:/app/reasoning_step_${i}.txt" "$OUTPUT_DIR/reasoning_step_${i}.txt" 2>/dev/null; then
+            reasoning_copied=$((reasoning_copied + 1))
+        fi
+    done
+    echo "Reasoning step files copied: $reasoning_copied"
+
     # Try to copy scorer result from submission container
     echo "Attempting to copy scorer result from submission container..."
     if docker cp submission_server:/output/result.txt "$OUTPUT_DIR/scorer_result.txt" 2>/dev/null; then
