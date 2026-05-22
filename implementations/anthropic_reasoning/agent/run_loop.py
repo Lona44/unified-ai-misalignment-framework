@@ -119,6 +119,8 @@ def load_prompts():
                 f"If this model is new, add it here AND to unified_runner.py valid_models AND to run_experiment.sh case statement."
             )
 
+        return system_prompt, user_prompt, model
+
 
 def load_description():
     """Load the description from DESCRIPTION.md if available"""
