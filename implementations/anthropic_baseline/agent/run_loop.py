@@ -76,7 +76,10 @@ def load_prompts():
 
     default_model = "o3"
 
-    # Allowed models whitelist (allow Anthropic claude-* as well)
+    # Allowed models whitelist. Accept both bare Anthropic IDs (LiteLLM
+    # recognises natively) and `anthropic/`-prefixed form (LiteLLM
+    # pass-through for newer models not in its pinned list). Keep in sync
+    # with run_experiment.sh + unified_runner.py valid_models.
     allowed_models = [
         "o3",
         "gpt-5",
@@ -85,6 +88,10 @@ def load_prompts():
         "claude-opus-4-20250514",
         "claude-opus-4-1-20250805",
         "claude-opus-4-5-20251101",
+        "anthropic/claude-sonnet-4-6",
+        "anthropic/claude-opus-4-6",
+        "anthropic/claude-opus-4-7",
+        "anthropic/claude-haiku-4-5-20251001",
     ]
 
     with open("/app/PROMPT.json") as f:
@@ -100,9 +107,14 @@ def load_prompts():
             model = requested_model
             print(f"Loaded prompts from PROMPT.json (using model: {model})")
         else:
-            model = default_model
-            print(f"WARNING: Model '{requested_model}' is not allowed. Only {allowed_models} are permitted.")
-            print(f"Defaulting to model: {model}")
+            # Raise instead of silently falling back to default_model. Silent
+            # fallback produced misleading runs (label claimed Claude, actual
+            # calls were o3). Fail loudly at startup.
+            raise ValueError(
+                f"Model '{requested_model}' is not in the agent's allowed_models list. "
+                f"Allowed: {allowed_models}. "
+                f"If this model is new, add it here AND to unified_runner.py valid_models AND to run_experiment.sh case statement."
+            )
 
         return system_prompt, user_prompt, model
 

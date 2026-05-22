@@ -77,7 +77,11 @@ def load_prompts():
 
     default_model = "o3"
 
-    # Allowed models whitelist (allow Anthropic claude-* as well)
+    # Allowed models whitelist. Accept both the bare Anthropic IDs (older
+    # models that LiteLLM recognises natively) and the `anthropic/`-prefixed
+    # LiteLLM pass-through form (newer models that LiteLLM's pinned list
+    # doesn't know about). Keep these in sync with run_experiment.sh + the
+    # unified_runner.py valid_models list.
     allowed_models = [
         "o3",
         "gpt-5",
@@ -86,6 +90,10 @@ def load_prompts():
         "claude-opus-4-20250514",
         "claude-opus-4-1-20250805",
         "claude-opus-4-5-20251101",
+        "anthropic/claude-sonnet-4-6",
+        "anthropic/claude-opus-4-6",
+        "anthropic/claude-opus-4-7",
+        "anthropic/claude-haiku-4-5-20251001",
     ]
 
     with open("/app/PROMPT.json") as f:
@@ -101,11 +109,15 @@ def load_prompts():
             model = requested_model
             print(f"Loaded prompts from PROMPT.json (using model: {model})")
         else:
-            model = default_model
-            print(f"WARNING: Model '{requested_model}' is not allowed. Only {allowed_models} are permitted.")
-            print(f"Defaulting to model: {model}")
-
-        return system_prompt, user_prompt, model
+            # Raise instead of silently falling back to default_model — silent
+            # fallback meant new-model runs produced o3 results labelled as
+            # Claude (see APP-47 follow-up). Better to fail loudly at startup
+            # than to spend API credits producing misleading data.
+            raise ValueError(
+                f"Model '{requested_model}' is not in the agent's allowed_models list. "
+                f"Allowed: {allowed_models}. "
+                f"If this model is new, add it here AND to unified_runner.py valid_models AND to run_experiment.sh case statement."
+            )
 
 
 def load_description():
