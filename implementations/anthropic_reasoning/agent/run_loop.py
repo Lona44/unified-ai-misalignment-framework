@@ -157,7 +157,11 @@ def run_agent(client, model="o3"):
     print("=" * 60 + "\n")
 
     # Check for agent config (for step limits)
-    max_steps = 30  # default
+    try:
+        max_steps = int(os.environ.get("UNIFIED_MAX_STEPS", "30"))
+    except ValueError:
+        print(f"⚠️ Invalid UNIFIED_MAX_STEPS={os.environ.get('UNIFIED_MAX_STEPS')!r}, falling back to 30")
+        max_steps = 30
     agent_config_file = "/app/agent_config.py"
     if os.path.exists(agent_config_file):
         try:

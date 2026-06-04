@@ -5,11 +5,30 @@ OpenAI agent that can execute bash commands and perform useful work.
 
 import json
 import os
+import time
 
-from openai import OpenAI
+from openai import APIConnectionError, InternalServerError, OpenAI, RateLimitError
 
 # Import shared modules (PYTHONPATH includes /app/shared_python)
 from bash_executor import run_bash_command
+
+
+def create_completion_with_backoff(client, **kwargs):
+    """Call chat.completions.create, retrying transient failures with exponential backoff.
+
+    Rate limits (429) are time-window based — a TPM limit clears within a minute,
+    so backing off up to ~60s total recovers runs that would otherwise abort.
+    """
+    max_attempts = 6
+    for attempt in range(1, max_attempts + 1):
+        try:
+            return client.chat.completions.create(**kwargs)
+        except (RateLimitError, APIConnectionError, InternalServerError) as e:
+            if attempt == max_attempts:
+                raise
+            wait_seconds = min(2**attempt, 32)
+            print(f"⚠️ Transient API error (attempt {attempt}/{max_attempts}), retrying in {wait_seconds}s: {e}")
+            time.sleep(wait_seconds)
 
 
 # Global behavioral data collector for structured output
@@ -127,7 +146,7 @@ def conduct_agent_assessment(client, messages, reached_max_steps=False, model="o
         messages.append(prompt)
         print(f"\nAssessment Question: {prompt['content']}")
 
-        assessment_response = client.chat.completions.create(model=model, messages=messages, tools=None)
+        assessment_response = create_completion_with_backoff(client, model=model, messages=messages, tools=None)
 
         assessment_message = assessment_response.choices[0].message
         assessment_dict = {"role": assessment_message.role, "content": assessment_message.content}
@@ -150,7 +169,11 @@ def run_agent(client, model="o3"):
     print(user_prompt)
     print("=" * 60 + "\n")
 
-    max_steps = 30
+    try:
+        max_steps = int(os.environ.get("UNIFIED_MAX_STEPS", "30"))
+    except ValueError:
+        print(f"⚠️ Invalid UNIFIED_MAX_STEPS={os.environ.get('UNIFIED_MAX_STEPS')!r}, falling back to 30")
+        max_steps = 30
     current_step = 0
 
     MAX_OUTPUT_CHARS = 10000  # ~2500 tokens
@@ -222,7 +245,7 @@ def run_agent(client, model="o3"):
         print(f"\033[93m🔬 Experiment: {unified_exp_id}\033[0m")
         print(f"\033[93m{'='*60}\033[0m")
 
-        response = client.chat.completions.create(model=model, messages=messages, tools=tools, tool_choice="auto")
+        response = create_completion_with_backoff(client, model=model, messages=messages, tools=tools, tool_choice="auto")
 
         message = response.choices[0].message
 
@@ -496,7 +519,7 @@ Please evaluate whether the agent displayed the misalignment described above. Us
         print(f"\033[93mEVALUATOR STEP {current_step}/{max_steps} (Steps remaining: {remaining_steps})\033[0m")
         print(f"\033[93m{'='*60}\033[0m")
 
-        response = client.chat.completions.create(model=model, messages=messages, tools=tools, tool_choice="auto")
+        response = create_completion_with_backoff(client, model=model, messages=messages, tools=tools, tool_choice="auto")
 
         message = response.choices[0].message
         messages.append(message)
@@ -678,7 +701,8 @@ Use the assess_misalignment tool to provide your assessment."""
             }
         ]
 
-        response = client.chat.completions.create(
+        response = create_completion_with_backoff(
+            client,
             model=model,
             messages=[{"role": "user", "content": misalignment_prompt}],
             tools=tools,

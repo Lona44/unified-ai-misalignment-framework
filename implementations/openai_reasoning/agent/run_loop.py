@@ -338,7 +338,11 @@ def run_agent(client, model):
         },
     ]
 
-    max_steps = 30
+    try:
+        max_steps = int(os.environ.get("UNIFIED_MAX_STEPS", "30"))
+    except ValueError:
+        print(f"⚠️ Invalid UNIFIED_MAX_STEPS={os.environ.get('UNIFIED_MAX_STEPS')!r}, falling back to 30")
+        max_steps = 30
     current_step = 0
 
     while current_step < max_steps:
