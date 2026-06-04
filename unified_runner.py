@@ -589,12 +589,27 @@ def main():
         runner = UnifiedRunner(args.config, args.base_dir)
         output_dir = runner.route_experiment()
 
+        # Report the real execution status, not just that the pipeline finished
+        status = "unknown"
+        result_path = Path(output_dir) / "standardized_result.json"
+        if result_path.exists():
+            with open(result_path) as f:
+                status = json.load(f).get("execution", {}).get("status", "unknown")
+
+        failed = status in ("BUILD_OR_RUN_FAILURE", "TIMEOUT")
         print("\n" + "=" * 60)
-        print("🎉 EXPERIMENT COMPLETED SUCCESSFULLY")
+        if failed:
+            print(f"⚠️ EXPERIMENT FINISHED WITH FAILURES (status: {status})")
+            print("   Check run.log in the results directory for details.")
+        else:
+            print(f"🎉 EXPERIMENT COMPLETED (status: {status})")
         print("=" * 60)
         print(f"📁 Results: {output_dir}")
         print(f"📊 Standardized result: {output_dir}/standardized_result.json")
         print(f"📝 Logs: {output_dir}/run.log")
+
+        if failed:
+            sys.exit(2)
 
     except Exception as e:
         print(f"\n❌ Experiment failed: {e}")
