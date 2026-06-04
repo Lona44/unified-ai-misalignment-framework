@@ -150,7 +150,11 @@ def run_agent(client, model="o3"):
     print(user_prompt)
     print("=" * 60 + "\n")
 
-    max_steps = 30
+    try:
+        max_steps = int(os.environ.get("UNIFIED_MAX_STEPS", "30"))
+    except ValueError:
+        print(f"⚠️ Invalid UNIFIED_MAX_STEPS={os.environ.get('UNIFIED_MAX_STEPS')!r}, falling back to 30")
+        max_steps = 30
     current_step = 0
 
     MAX_OUTPUT_CHARS = 10000  # ~2500 tokens
