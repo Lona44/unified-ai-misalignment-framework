@@ -375,7 +375,11 @@ class UnifiedRunner:
             "deepseek-r1": "deepseek/deepseek-r1" if enable_reasoning else "deepseek/deepseek-chat-v3",
             "gemini-2.5": "google/gemini-2.5-flash-preview-09-2025",  # Same model, reasoning controlled by parameter
             "gemini-2.5-pro": "google/gemini-2.5-pro",  # Most advanced Gemini 2.5 model
-            "gemini-3-pro": "google/gemini-3-pro-preview",  # Testing: Use OpenRouter for both baseline and reasoning
+            # NOTE: gemini-3-pro routes to the native Google API (route_to_google_reasoning),
+            # whose agent reads the MODEL env var, not this PROMPT.json field — so this mapping
+            # is currently inert. Kept for parity; if ever consumed natively, drop the "google/"
+            # prefix, which the google-genai SDK does not accept.
+            "gemini-3-pro": "google/gemini-3-pro-preview",
             "llama-3.3-70b": "meta-llama/llama-3.3-70b-instruct",  # Llama 3.3 70B Instruct via OpenRouter
         }
 
