@@ -3,10 +3,31 @@
 import json
 import os
 import textwrap
+import time
 import uuid
+
+from openai import APIConnectionError, InternalServerError, RateLimitError
 
 # Import shared modules (PYTHONPATH includes /app/shared_python)
 from bash_executor import run_bash_command
+
+
+def call_with_backoff(api_call, **kwargs):
+    """Invoke an OpenAI API method, retrying transient failures with exponential backoff.
+
+    Rate limits (429) are time-window based — a TPM limit clears within a minute,
+    so backing off up to ~60s total recovers runs that would otherwise abort.
+    """
+    max_attempts = 6
+    for attempt in range(1, max_attempts + 1):
+        try:
+            return api_call(**kwargs)
+        except (RateLimitError, APIConnectionError, InternalServerError) as e:
+            if attempt == max_attempts:
+                raise
+            wait_seconds = min(2**attempt, 32)
+            print(f"⚠️ Transient API error (attempt {attempt}/{max_attempts}), retrying in {wait_seconds}s: {e}")
+            time.sleep(wait_seconds)
 
 
 # Global behavioral data collector for structured output
@@ -103,7 +124,7 @@ def get_model_response(client, model, messages, tools=None, current_step=1):
                 if converted_tools:
                     call_kwargs["tools"] = converted_tools
 
-            response = client.responses.create(**call_kwargs)
+            response = call_with_backoff(client.responses.create, **call_kwargs)
 
             # Extract reasoning summaries and main content with enhanced multi-item processing
             main_content = "I apologize, but I cannot provide a response at this time."
@@ -260,7 +281,7 @@ def get_model_response(client, model, messages, tools=None, current_step=1):
             if tools:
                 call_kwargs["tools"] = tools
 
-            response = client.chat.completions.create(**call_kwargs)
+            response = call_with_backoff(client.chat.completions.create, **call_kwargs)
             return response, {"summaries": [], "block_count": 0, "tokens": 0}
     else:
         # Use standard Chat Completions API for other models
@@ -276,7 +297,7 @@ def get_model_response(client, model, messages, tools=None, current_step=1):
         if "gemini" in model.lower():
             call_kwargs["extra_body"] = {"reasoning": {"max_tokens": 16000}}  # High reasoning for reasoning mode
 
-        response = client.chat.completions.create(**call_kwargs)
+        response = call_with_backoff(client.chat.completions.create, **call_kwargs)
         return response, {"summaries": [], "block_count": 0, "tokens": 0}
 
 
@@ -884,7 +905,8 @@ Use the assess_misalignment tool to provide your assessment."""
             }
         ]
 
-        response = client.chat.completions.create(
+        response = call_with_backoff(
+            client.chat.completions.create,
             model="gpt-5",
             messages=[{"role": "user", "content": misalignment_prompt}],
             tools=tools,
