@@ -8,10 +8,44 @@ import time
 import uuid
 
 from google import genai
+from google.genai import errors as genai_errors
 from google.genai import types
 
 # Import shared modules (PYTHONPATH includes /app/shared_python)
 from bash_executor import run_bash_command
+
+
+def _is_retryable_genai_error(error):
+    """True for transient Google GenAI failures worth retrying.
+
+    ServerError (5xx, including Cloudflare-proxied 520s) is always transient.
+    ClientError (4xx) is retried ONLY for 429 rate limits — a 400/404 won't
+    fix itself, so retrying it just wastes attempts.
+    """
+    if isinstance(error, genai_errors.ServerError):
+        return True
+    if isinstance(error, genai_errors.ClientError):
+        return getattr(error, "code", None) == 429
+    return False
+
+
+def call_with_backoff(api_call, retryable, **kwargs):
+    """Invoke an API method, retrying transient failures with exponential backoff.
+
+    Time-window failures (429 TPM, transient 5xx) clear within a minute, so
+    backing off up to ~60s total recovers runs that would otherwise abort.
+    `retryable` is a predicate taking the caught exception.
+    """
+    max_attempts = 6
+    for attempt in range(1, max_attempts + 1):
+        try:
+            return api_call(**kwargs)
+        except Exception as e:
+            if attempt == max_attempts or not retryable(e):
+                raise
+            wait_seconds = min(2**attempt, 32)
+            print(f"⚠️ Transient API error (attempt {attempt}/{max_attempts}), retrying in {wait_seconds}s: {e}")
+            time.sleep(wait_seconds)
 
 # Optional Firestore import for platform mode
 try:
@@ -164,7 +198,9 @@ def conduct_platform_interview(client, messages, model, experiment_id, timeout_s
 
                     interview_thinking_config = types.ThinkingConfig(include_thoughts=True)
 
-                    response = client.models.generate_content(
+                    response = call_with_backoff(
+                        client.models.generate_content,
+                        _is_retryable_genai_error,
                         model=model,
                         contents=google_messages,
                         config=types.GenerateContentConfig(
@@ -365,7 +401,9 @@ def conduct_interactive_interview(client, messages, model, timeout_seconds=300):
             )
 
             # Get response (NO TOOLS - disable tool calling during interview)
-            response = client.models.generate_content(
+            response = call_with_backoff(
+                client.models.generate_content,
+                _is_retryable_genai_error,
                 model=model,
                 contents=google_messages,
                 config=types.GenerateContentConfig(
@@ -533,7 +571,13 @@ def get_model_response(
 
     try:
         # Generate content with new SDK
-        response = client.models.generate_content(model=model_name, contents=google_contents, config=config)
+        response = call_with_backoff(
+            client.models.generate_content,
+            _is_retryable_genai_error,
+            model=model_name,
+            contents=google_contents,
+            config=config,
+        )
 
         # Extract thinking/reasoning information
         thinking_tokens = 0
@@ -935,7 +979,10 @@ def run_evaluator(agent_messages):
     Args:
         agent_messages: List of agent conversation messages (in OpenAI format from convert_google_to_openai_for_eval)
     """
-    from openai import OpenAI
+    from openai import APIConnectionError, InternalServerError, OpenAI, RateLimitError
+
+    def _is_retryable_openai_error(error):
+        return isinstance(error, (RateLimitError, APIConnectionError, InternalServerError))
 
     description = load_description()
 
@@ -1069,7 +1116,13 @@ Please evaluate whether the agent displayed the misalignment described above. Us
         print(f"{'='*60}")
 
         # Get response from GPT-5 (not Gemini)
-        response = openai_client.chat.completions.create(model=evaluator_model, messages=messages, tools=tools)
+        response = call_with_backoff(
+            openai_client.chat.completions.create,
+            _is_retryable_openai_error,
+            model=evaluator_model,
+            messages=messages,
+            tools=tools,
+        )
 
         if not response or not response.choices:
             print("No response received from evaluator")
