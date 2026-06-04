@@ -1222,7 +1222,10 @@ def write_result(data):
 
 def main():
     try:
-        model = os.environ.get("MODEL", "gemini-3-pro-preview")
+        use_vertex = os.environ.get("GOOGLE_GENAI_USE_VERTEXAI", "").lower() == "true"
+        # gemini-3-pro-preview is dead (404 everywhere); 3.1 is the only callable preview.
+        default_model = "gemini-3.1-pro-preview" if use_vertex else "gemini-3-pro-preview"
+        model = os.environ.get("GOOGLE_VERTEX_MODEL") or os.environ.get("MODEL", default_model)
 
         # Get reasoning mode from environment variable
         enable_reasoning = os.getenv("UNIFIED_REASONING", "DISABLED").upper() == "ENABLED"
@@ -1250,48 +1253,57 @@ def main():
         print(f"\nStarting agent with {model}")
         print("=" * 60)
 
-        # Initialize Google GenAI client (NEW SDK)
-        google_api_key = os.environ.get("GOOGLE_API_KEY")
-        if not google_api_key:
-            raise ValueError("GOOGLE_API_KEY environment variable required for Google models")
-
-        print(f"🌐 Using Google GenAI API (NEW SDK) for model: {model}")
+        # Initialize Google GenAI client (NEW SDK) — Vertex AI or AI Studio
         print(f"🧠 Reasoning mode: {'ENABLED (high thinking)' if enable_reasoning else 'DISABLED (low thinking)'}")
         print("💡 Note: Gemini 3 Pro always uses thinking - thoughts visible in both modes")
         print("💡 Using NATIVE Google format (thought signatures preserved automatically)")
 
-        # Initialize client with new SDK
-        client = genai.Client(api_key=google_api_key)
+        if use_vertex:
+            project = os.environ.get("GOOGLE_CLOUD_PROJECT")
+            location = os.environ.get("GOOGLE_CLOUD_LOCATION", "global")
+            if not project:
+                raise ValueError("GOOGLE_CLOUD_PROJECT required when GOOGLE_GENAI_USE_VERTEXAI=true")
+            print(f"🌐 Using Vertex AI (project={project}, location={location}) for model: {model}")
+            client = genai.Client(vertexai=True, project=project, location=location)
+        else:
+            google_api_key = os.environ.get("GOOGLE_API_KEY")
+            if not google_api_key:
+                raise ValueError("GOOGLE_API_KEY environment variable required for Google models")
+            print(f"🌐 Using Google AI Studio API for model: {model}")
+            client = genai.Client(api_key=google_api_key)
 
         agent_result = run_agent(client, model, enable_reasoning)
         agent_messages = agent_result.get("messages", [])
 
-        # Interview phase - choose method based on environment
-        # Platform mode: Firestore available AND valid experiment ID (from platform .env)
-        # Local mode: no valid experiment ID (local testing)
+        # Interview phase - choose method based on environment.
+        # Platform mode is OPT-IN (UNIFIED_PLATFORM_MODE=true): the Firestore-backed
+        # hosted platform sets it. Inferring it from "Firestore lib installed + an
+        # experiment id" false-positives on local Vertex runs (real ADC makes
+        # firestore.Client() construct, then polling 403s on a project without the
+        # Firestore API enabled). Interactive mode needs a real TTY; otherwise there
+        # is no interviewer, so skip the interview entirely.
         experiment_id = os.environ.get("UNIFIED_EXPERIMENT_ID")
         has_valid_experiment_id = experiment_id and experiment_id != "unknown"
+        platform_mode = os.environ.get("UNIFIED_PLATFORM_MODE", "").lower() == "true"
         has_tty = sys.stdin.isatty()
 
-        # Verbose debug for platform detection
-        print(f"\n📋 Interview detection: FIRESTORE_AVAILABLE={FIRESTORE_AVAILABLE}")
-        print(f"📋 Interview detection: UNIFIED_EXPERIMENT_ID={experiment_id}")
-        print(f"📋 Interview detection: has_valid_experiment_id={has_valid_experiment_id}")
-        print(f"📋 Interview detection: has_tty={has_tty}")
+        print(f"\n📋 Interview detection: platform_mode={platform_mode}, "
+              f"FIRESTORE_AVAILABLE={FIRESTORE_AVAILABLE}, has_tty={has_tty}, "
+              f"experiment_id={experiment_id}")
 
-        # Platform mode takes priority if we have Firestore and a valid experiment ID
-        if FIRESTORE_AVAILABLE and has_valid_experiment_id:
-            # Platform mode: poll Firestore for questions
-            print(f"\n🌐 Platform mode detected (experiment: {experiment_id})")
+        if platform_mode and FIRESTORE_AVAILABLE and has_valid_experiment_id:
+            print(f"\n🌐 Platform mode (experiment: {experiment_id}) - polling Firestore")
             agent_messages, interview_data = conduct_platform_interview(
                 client, agent_messages, model, experiment_id, timeout_seconds=300
             )
-        else:
-            # Local mode: interactive terminal interview
+        elif has_tty:
             print("\n💻 Local mode - interactive terminal interview")
             agent_messages, interview_data = conduct_interactive_interview(
                 client, agent_messages, model, timeout_seconds=300
             )
+        else:
+            print("\n⏭️  No TTY and not platform mode - skipping interview phase")
+            interview_data = []
         behavioral_data["interview"] = interview_data
 
         # Phase 3: Evaluation (always uses GPT-5 via OpenAI API)
