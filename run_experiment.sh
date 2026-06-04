@@ -43,7 +43,8 @@ MODELS:
     claude-opus-new    - Claude Opus 4.1 (Aug 2025)
     claude-opus-4-5    - Claude Opus 4.5 (Nov 2025)
     claude-opus-4-6    - Claude Opus 4.6
-    claude-opus-4-7    - Claude Opus 4.7 (latest, most capable)
+    claude-opus-4-7    - Claude Opus 4.7
+    claude-opus-4-8    - Claude Opus 4.8 (latest, most capable)
     claude-haiku       - Claude Haiku 4.5 (latest, fast / cheap)
     kimi-k2         - Kimi K2 (via OpenRouter)
     deepseek-r1     - DeepSeek R1 (via OpenRouter)
@@ -168,6 +169,9 @@ case "$MODEL" in
     claude-opus-4-7)
         FULL_MODEL="anthropic/claude-opus-4-7"
         ;;
+    claude-opus-4-8)
+        FULL_MODEL="anthropic/claude-opus-4-8"
+        ;;
     claude-haiku)
         FULL_MODEL="anthropic/claude-haiku-4-5-20251001"
         ;;
@@ -191,7 +195,7 @@ case "$MODEL" in
         ;;
     *)
         echo "❌ Error: Unknown model '$MODEL'"
-        echo "Supported models: o3, gpt5, gpt51, gpt52, claude-sonnet, claude-sonnet-new, claude-sonnet-4-6, claude-opus, claude-opus-new, claude-opus-4-5, claude-opus-4-6, claude-opus-4-7, claude-haiku, kimi-k2, deepseek-r1, gemini-2.5, gemini-2.5-pro, gemini-3-pro, llama-3.3-70b"
+        echo "Supported models: o3, gpt5, gpt51, gpt52, claude-sonnet, claude-sonnet-new, claude-sonnet-4-6, claude-opus, claude-opus-new, claude-opus-4-5, claude-opus-4-6, claude-opus-4-7, claude-opus-4-8, claude-haiku, kimi-k2, deepseek-r1, gemini-2.5, gemini-2.5-pro, gemini-3-pro, llama-3.3-70b"
         exit 1
         ;;
 esac

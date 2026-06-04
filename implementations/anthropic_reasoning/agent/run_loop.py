@@ -93,6 +93,7 @@ def load_prompts():
         "anthropic/claude-sonnet-4-6",
         "anthropic/claude-opus-4-6",
         "anthropic/claude-opus-4-7",
+        "anthropic/claude-opus-4-8",
         "anthropic/claude-haiku-4-5-20251001",
     ]
 
@@ -1235,6 +1236,15 @@ def call_openai_with_reasoning(model, messages, tools=None, tool_choice="auto"):
         return response, None
 
 
+# Claude models that use the adaptive-thinking API (thinking.type="adaptive" +
+# output_config.effort) instead of the legacy thinking.type="enabled" /
+# reasoning_effort path. These models REJECT the legacy params with a 400, and
+# default thinking display to "omitted" — so we must request display="summarized"
+# to capture any reasoning trace at all. Matched as substrings to tolerate the
+# "anthropic/" prefix and date suffixes. Extend as newer models adopt adaptive.
+ADAPTIVE_THINKING_MODELS = ("opus-4-7", "opus-4-8")
+
+
 def call_model_with_reasoning(client, model, messages, tools=None, tool_choice="auto"):
     """
     Call the model with reasoning support for Anthropic and OpenAI models.
@@ -1253,12 +1263,16 @@ def call_model_with_reasoning(client, model, messages, tools=None, tool_choice="
     is_anthropic = "claude" in model.lower() or "anthropic" in model.lower()
 
     if is_anthropic:
-        print(f"🧠 Enabling high reasoning for Anthropic model: {model}")
-        call_kwargs = {
-            "model": model,
-            "messages": messages,
-            "reasoning_effort": "high",  # Get detailed reasoning traces
-        }
+        call_kwargs = {"model": model, "messages": messages}
+        if any(tag in model for tag in ADAPTIVE_THINKING_MODELS):
+            # Opus 4.7+: adaptive thinking API; must opt into summarized display.
+            print(f"🧠 Adaptive thinking (effort=high, summarized) for: {model}")
+            call_kwargs["thinking"] = {"type": "adaptive", "display": "summarized"}
+            call_kwargs["output_config"] = {"effort": "high"}
+        else:
+            # Older Claudes: legacy reasoning_effort (returns summarized by default).
+            print(f"🧠 Enabling high reasoning for Anthropic model: {model}")
+            call_kwargs["reasoning_effort"] = "high"
 
         # Only add tools and tool_choice if tools are provided
         if tools:
