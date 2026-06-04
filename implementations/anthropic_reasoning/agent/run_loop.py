@@ -8,9 +8,21 @@ import logging
 import os
 import sys
 import textwrap
+import time
 
 # Import shared modules (PYTHONPATH includes /app/shared_python)
 from bash_executor import run_bash_command
+
+# Transient errors worth retrying. LiteLLM raises OpenAI-compatible exceptions,
+# so this single tuple covers both the Anthropic (LiteLLM) agent calls and the
+# OpenAI evaluator calls. Empty fallback if openai isn't importable (no retry,
+# but no crash).
+try:
+    from openai import APIConnectionError, InternalServerError, RateLimitError
+
+    _RETRYABLE_ERRORS = (RateLimitError, APIConnectionError, InternalServerError)
+except ImportError:
+    _RETRYABLE_ERRORS = ()
 
 # OpenAI import removed - now using LiteLLM for all providers
 
@@ -912,13 +924,22 @@ def build_client(model: str, phase: str | None = None):
 
 
 def call_model(client, **kwargs):
-    """Universal function to call either LiteLLM completion or OpenAI client."""
-    if hasattr(client, "chat") and hasattr(client.chat, "completions"):
-        # This is an OpenAI client
-        return client.chat.completions.create(**kwargs)
-    else:
-        # This is LiteLLM completion function
-        return client(**kwargs)
+    """Call either LiteLLM completion or an OpenAI client, retrying transient
+    errors (429 rate limits, 5xx/overloaded, connection drops) with exponential
+    backoff. This is the single dispatch chokepoint for both agent and evaluator
+    calls, so retry here covers every Anthropic-implementation API call."""
+    max_attempts = 6
+    for attempt in range(1, max_attempts + 1):
+        try:
+            if hasattr(client, "chat") and hasattr(client.chat, "completions"):
+                return client.chat.completions.create(**kwargs)  # OpenAI client
+            return client(**kwargs)  # LiteLLM completion function
+        except _RETRYABLE_ERRORS as e:
+            if attempt == max_attempts:
+                raise
+            wait_seconds = min(2**attempt, 32)
+            print(f"⚠️ Transient API error (attempt {attempt}/{max_attempts}), retrying in {wait_seconds}s: {e}")
+            time.sleep(wait_seconds)
 
 
 def convert_tools_for_responses_api(tools):
@@ -1184,7 +1205,7 @@ def call_openai_with_reasoning(model, messages, tools=None, tool_choice="auto"):
                     call_kwargs["tools"] = tools
                     call_kwargs["tool_choice"] = tool_choice
 
-                response = client.chat.completions.create(**call_kwargs)
+                response = call_model(client, **call_kwargs)
                 reasoning_data = {}
 
                 # Check for reasoning tokens in fallback mode
@@ -1217,7 +1238,7 @@ def call_openai_with_reasoning(model, messages, tools=None, tool_choice="auto"):
                 call_kwargs["tools"] = tools
                 call_kwargs["tool_choice"] = tool_choice
 
-            response = client.chat.completions.create(**call_kwargs)
+            response = call_model(client, **call_kwargs)
             return response, None
 
     except Exception as e:
@@ -1232,7 +1253,7 @@ def call_openai_with_reasoning(model, messages, tools=None, tool_choice="auto"):
             call_kwargs["tools"] = tools
             call_kwargs["tool_choice"] = tool_choice
 
-        response = client.chat.completions.create(**call_kwargs)
+        response = call_model(client, **call_kwargs)
         return response, None
 
 
