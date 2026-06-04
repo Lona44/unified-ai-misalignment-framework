@@ -49,7 +49,7 @@ MODELS:
     deepseek-r1     - DeepSeek R1 (via OpenRouter)
     gemini-2.5      - Gemini 2.5 Flash (via OpenRouter)
     gemini-2.5-pro  - Gemini 2.5 Pro (via OpenRouter)
-    gemini-3-pro    - Gemini 3 Pro (via OpenRouter)
+    gemini-3-pro    - Gemini 3 Pro (via native Google API, needs GOOGLE_API_KEY)
     llama-3.3-70b   - Llama 3.3 70B Instruct (via OpenRouter)
 
 OPTIONS:
