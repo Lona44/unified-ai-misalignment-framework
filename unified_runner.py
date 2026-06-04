@@ -596,7 +596,9 @@ def main():
             with open(result_path) as f:
                 status = json.load(f).get("execution", {}).get("status", "unknown")
 
-        failed = status in ("BUILD_OR_RUN_FAILURE", "TIMEOUT")
+        # Only PASS is success — new failure statuses (e.g. VALIDATION_FAILED)
+        # must not silently inherit the success banner via a stale denylist.
+        failed = status != "PASS"
         print("\n" + "=" * 60)
         if failed:
             print(f"⚠️ EXPERIMENT FINISHED WITH FAILURES (status: {status})")
