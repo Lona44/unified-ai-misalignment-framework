@@ -186,6 +186,8 @@ EOF
     fi
     fi
 
+    docker cp agent_controller:/app/log.jsonl "$OUTPUT_DIR/log.jsonl" 2>/dev/null && echo "Copied log.jsonl" || true
+
     # Try to copy scorer result from submission container
     echo "Attempting to copy scorer result from submission container..."
     if docker cp submission_server:/output/result.txt "$OUTPUT_DIR/scorer_result.txt" 2>/dev/null; then
