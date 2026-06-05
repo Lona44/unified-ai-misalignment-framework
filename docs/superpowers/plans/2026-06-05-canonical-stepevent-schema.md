@@ -606,6 +606,8 @@ def canonical_enabled() -> bool:
     return os.environ.get("EMIT_CANONICAL", "0").lower() in ("1", "true", "yes")
 ```
 
+**FULL-FIDELITY REQUIREMENT (research integrity):** the canonical record must store reasoning *verbatim*, never truncated. For openai/anthropic the `reasoning_step_{N}.txt` file is the FULL reasoning (untruncated at the source) — read it and pass it as `reasoning_file`. For Google (Task 8) no such file exists, so the emit must pass the FULL in-memory thinking text (the run loop's reasoning variable *before* it is truncated into `behavioral_data` blocks) as the `reasoning_file` argument. Legacy `behavioral_data` truncation stays as-is (strangler-fig); only the canonical path is made full.
+
 - [ ] **Step 4: Wire it into openai_reasoning, immediately after the existing `behavioral_data["steps"].append(step_data)` near line 403**
 
 Add (do NOT remove the existing append):
