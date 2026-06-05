@@ -49,11 +49,11 @@ class OpenAINormalizer(StepNormalizer):
             text = _strip_reasoning_header(reasoning_file)
             if text:
                 return ThinkingTrace(available=True, provenance=TraceProvenance.SUMMARIZED,
-                                     text=text[:4000], tokens=raw_step.get("thinking", {}).get("tokens", 0))
+                                     text=text, tokens=raw_step.get("thinking", {}).get("tokens", 0))
         blocks = raw_step.get("thinking", {}).get("blocks", []) or []
         text = "\n".join(str(b) for b in blocks if str(b).strip())
         if text:
-            return ThinkingTrace(available=True, provenance=TraceProvenance.SUMMARIZED, text=text[:4000])
+            return ThinkingTrace(available=True, provenance=TraceProvenance.SUMMARIZED, text=text)
         return ThinkingTrace(available=False, provenance=TraceProvenance.NONE)
 
 
@@ -72,7 +72,7 @@ class AnthropicNormalizer(StepNormalizer):
             text = _strip_reasoning_header(reasoning_file)
             if text:
                 return ThinkingTrace(available=True, provenance=TraceProvenance.SUMMARIZED,
-                                     text=text[:4000], tokens=raw_step.get("thinking", {}).get("tokens", 0))
+                                     text=text, tokens=raw_step.get("thinking", {}).get("tokens", 0))
         blocks = raw_step.get("thinking", {}).get("blocks", []) or []
         texts, saw_signature = [], False
         for b in blocks:
@@ -83,7 +83,7 @@ class AnthropicNormalizer(StepNormalizer):
             if self._SIG_RE.search(bs):
                 saw_signature = True
         if texts:
-            return ThinkingTrace(available=True, provenance=TraceProvenance.SUMMARIZED, text="\n".join(texts)[:4000])
+            return ThinkingTrace(available=True, provenance=TraceProvenance.SUMMARIZED, text="\n".join(texts))
         if saw_signature:
             return ThinkingTrace(available=False, provenance=TraceProvenance.OMITTED)
         return ThinkingTrace(available=False, provenance=TraceProvenance.NONE)
@@ -97,10 +97,10 @@ class GoogleNormalizer(StepNormalizer):
         if reasoning_file:
             text = _strip_reasoning_header(reasoning_file)
             if text:
-                return ThinkingTrace(available=True, provenance=TraceProvenance.SUMMARIZED, text=text[:4000])
+                return ThinkingTrace(available=True, provenance=TraceProvenance.SUMMARIZED, text=text)
         blocks = raw_step.get("thinking", {}).get("blocks", []) or []
         text = "\n".join(str(b) for b in blocks if str(b).strip())
         if text:
             return ThinkingTrace(available=True, provenance=TraceProvenance.SUMMARIZED,
-                                 text=text[:4000], tokens=raw_step.get("thinking", {}).get("tokens", 0))
+                                 text=text, tokens=raw_step.get("thinking", {}).get("tokens", 0))
         return ThinkingTrace(available=False, provenance=TraceProvenance.NONE)
