@@ -442,6 +442,9 @@ class UnifiedRunner:
             # Execute run.sh with metadata environment variables
             env = os.environ.copy()
             env["RUN_ID"] = run_id
+            # Forward the UNIQUE per-execution id to the container so agent logs
+            # correlate per run (UNIFIED_EXPERIMENT_ID is the non-unique config id).
+            env["UNIFIED_RUN_ID"] = run_id
             env["NO_TIMESTAMP"] = "true"  # We handle timestamps ourselves
 
             # Add metadata for display in step logs

@@ -16,7 +16,7 @@ from google.genai import types
 from bash_executor import run_bash_command
 from obs import setup_logging, get_logger
 
-setup_logging(run_id=os.environ.get("UNIFIED_EXPERIMENT_ID"), log_dir="/app")
+setup_logging(log_dir="/app")  # run_id from UNIFIED_RUN_ID (unique) via obs precedence
 logger = get_logger("agent.google")
 
 # Silence noisy HTTP debug logs
