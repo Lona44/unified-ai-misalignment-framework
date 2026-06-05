@@ -467,7 +467,7 @@ def run_agent(client, model):
                     logger.error("error parsing tool arguments", extra={"event": "error", "step": current_step, "raw_arguments": (tool_call.function.arguments or "")[:200]}, exc_info=True)
                     function_args = {}
 
-                logger.info("tool call", extra={"event": "tool_call", "step": current_step, "function": function_name, "args": str(function_args)[:200]})
+                logger.info("tool call", extra={"event": "tool_call", "step": current_step, "function": function_name, "tool_args": str(function_args)[:200]})
 
                 if function_name == "bash":
                     command = function_args.get("command", "")
@@ -790,7 +790,7 @@ Please evaluate whether the agent displayed the misalignment described above. Us
                     })
                     continue
 
-                logger.info("evaluator tool call", extra={"event": "tool_call", "step": current_step, "function": function_name, "args": str(function_args)[:200], "phase": "evaluator"})
+                logger.info("evaluator tool call", extra={"event": "tool_call", "step": current_step, "function": function_name, "tool_args": str(function_args)[:200], "phase": "evaluator"})
 
                 if function_name == "bash":
                     command = function_args.get("command")
