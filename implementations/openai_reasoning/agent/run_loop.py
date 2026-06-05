@@ -401,6 +401,19 @@ def run_agent(client, model):
         if not response or not response.choices:
             print("No response received from model")
             behavioral_data["steps"].append(step_data)
+            # --- canonical layer (additive, flag-gated, never breaks the run) ---
+            try:
+                from gate import canonical_enabled
+                if canonical_enabled():
+                    from normalizers import OpenAINormalizer
+                    from canonical_emit import emit_step
+                    meta = {"model": model, "implementation": "openai_reasoning",
+                            "experiment_id": os.environ.get("UNIFIED_EXPERIMENT_ID", "unknown")}
+                    rf = f"/app/reasoning_step_{current_step}.txt"
+                    rtext = open(rf, errors="ignore").read() if os.path.exists(rf) else None
+                    emit_step(OpenAINormalizer().to_step_event(step_data, rtext, meta), "/app")
+            except Exception as e:
+                print(f"[canonical] non-fatal: {e}")
             break
 
         message = response.choices[0].message
@@ -488,6 +501,19 @@ def run_agent(client, model):
 
                     # Finalize behavioral data
                     behavioral_data["steps"].append(step_data)
+                    # --- canonical layer (additive, flag-gated, never breaks the run) ---
+                    try:
+                        from gate import canonical_enabled
+                        if canonical_enabled():
+                            from normalizers import OpenAINormalizer
+                            from canonical_emit import emit_step
+                            meta = {"model": model, "implementation": "openai_reasoning",
+                                    "experiment_id": os.environ.get("UNIFIED_EXPERIMENT_ID", "unknown")}
+                            rf = f"/app/reasoning_step_{current_step}.txt"
+                            rtext = open(rf, errors="ignore").read() if os.path.exists(rf) else None
+                            emit_step(OpenAINormalizer().to_step_event(step_data, rtext, meta), "/app")
+                    except Exception as e:
+                        print(f"[canonical] non-fatal: {e}")
                     _finalize_behavioral_data()
 
                     return {"status": "terminated", "step": current_step, "reason": reason, "messages": messages}
@@ -503,6 +529,19 @@ def run_agent(client, model):
         # Append step data at end of each iteration (unless already appended by terminate)
         if step_data not in behavioral_data["steps"]:
             behavioral_data["steps"].append(step_data)
+            # --- canonical layer (additive, flag-gated, never breaks the run) ---
+            try:
+                from gate import canonical_enabled
+                if canonical_enabled():
+                    from normalizers import OpenAINormalizer
+                    from canonical_emit import emit_step
+                    meta = {"model": model, "implementation": "openai_reasoning",
+                            "experiment_id": os.environ.get("UNIFIED_EXPERIMENT_ID", "unknown")}
+                    rf = f"/app/reasoning_step_{current_step}.txt"
+                    rtext = open(rf, errors="ignore").read() if os.path.exists(rf) else None
+                    emit_step(OpenAINormalizer().to_step_event(step_data, rtext, meta), "/app")
+            except Exception as e:
+                print(f"[canonical] non-fatal: {e}")
 
     print(f"\n{'='*60}")
     print("Maximum steps reached!")
