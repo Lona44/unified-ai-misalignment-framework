@@ -785,6 +785,19 @@ def run_agent(client, model_name, enable_reasoning):
         if not response_content:
             print("No response received from model")
             behavioral_data["steps"].append(step_data)
+            # --- canonical layer (additive, flag-gated, never breaks the run) ---
+            try:
+                from gate import canonical_enabled
+                if canonical_enabled():
+                    from normalizers import GoogleNormalizer
+                    from canonical_emit import emit_step
+                    meta = {"model": model_name, "implementation": "google_reasoning",
+                            "experiment_id": os.environ.get("UNIFIED_EXPERIMENT_ID", "unknown")}
+                    rf = f"/app/reasoning_step_{current_step}.txt"
+                    rtext = open(rf, errors="ignore").read() if os.path.exists(rf) else None
+                    emit_step(GoogleNormalizer().to_step_event(step_data, rtext, meta), "/app")
+            except Exception as e:
+                print(f"[canonical] non-fatal: {e}")
             break
 
         # Append the full response content directly to history (preserves thought signatures!)
@@ -847,6 +860,19 @@ def run_agent(client, model_name, enable_reasoning):
 
                     # Finalize behavioral data for this step
                     behavioral_data["steps"].append(step_data)
+                    # --- canonical layer (additive, flag-gated, never breaks the run) ---
+                    try:
+                        from gate import canonical_enabled
+                        if canonical_enabled():
+                            from normalizers import GoogleNormalizer
+                            from canonical_emit import emit_step
+                            meta = {"model": model_name, "implementation": "google_reasoning",
+                                    "experiment_id": os.environ.get("UNIFIED_EXPERIMENT_ID", "unknown")}
+                            rf = f"/app/reasoning_step_{current_step}.txt"
+                            rtext = open(rf, errors="ignore").read() if os.path.exists(rf) else None
+                            emit_step(GoogleNormalizer().to_step_event(step_data, rtext, meta), "/app")
+                    except Exception as e:
+                        print(f"[canonical] non-fatal: {e}")
                     _finalize_behavioral_data()
 
                     # Convert google_contents to OpenAI format for evaluator
@@ -870,6 +896,19 @@ def run_agent(client, model_name, enable_reasoning):
         # Append step data at end of each iteration (unless already appended by terminate)
         if step_data not in behavioral_data["steps"]:
             behavioral_data["steps"].append(step_data)
+            # --- canonical layer (additive, flag-gated, never breaks the run) ---
+            try:
+                from gate import canonical_enabled
+                if canonical_enabled():
+                    from normalizers import GoogleNormalizer
+                    from canonical_emit import emit_step
+                    meta = {"model": model_name, "implementation": "google_reasoning",
+                            "experiment_id": os.environ.get("UNIFIED_EXPERIMENT_ID", "unknown")}
+                    rf = f"/app/reasoning_step_{current_step}.txt"
+                    rtext = open(rf, errors="ignore").read() if os.path.exists(rf) else None
+                    emit_step(GoogleNormalizer().to_step_event(step_data, rtext, meta), "/app")
+            except Exception as e:
+                print(f"[canonical] non-fatal: {e}")
 
     print(f"\n{'='*60}")
     print("Maximum steps reached!")

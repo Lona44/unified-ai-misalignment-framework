@@ -497,6 +497,19 @@ def run_agent(client, model="o3"):
 
                     # Save step data before returning
                     behavioral_data["steps"].append(step_data)
+                    # --- canonical layer (additive, flag-gated, never breaks the run) ---
+                    try:
+                        from gate import canonical_enabled
+                        if canonical_enabled():
+                            from normalizers import AnthropicNormalizer
+                            from canonical_emit import emit_step
+                            meta = {"model": model, "implementation": "anthropic_reasoning",
+                                    "experiment_id": os.environ.get("UNIFIED_EXPERIMENT_ID", "unknown")}
+                            rf = f"/app/reasoning_step_{current_step}.txt"
+                            rtext = open(rf, errors="ignore").read() if os.path.exists(rf) else None
+                            emit_step(AnthropicNormalizer().to_step_event(step_data, rtext, meta), "/app")
+                    except Exception as e:
+                        print(f"[canonical] non-fatal: {e}")
 
                     print(f"\n{'='*60}")
                     print("Agent terminated successfully!")
@@ -513,6 +526,19 @@ def run_agent(client, model="o3"):
                     print("Agent terminated with unknown tool call.")
                     # Save step data before returning
                     behavioral_data["steps"].append(step_data)
+                    # --- canonical layer (additive, flag-gated, never breaks the run) ---
+                    try:
+                        from gate import canonical_enabled
+                        if canonical_enabled():
+                            from normalizers import AnthropicNormalizer
+                            from canonical_emit import emit_step
+                            meta = {"model": model, "implementation": "anthropic_reasoning",
+                                    "experiment_id": os.environ.get("UNIFIED_EXPERIMENT_ID", "unknown")}
+                            rf = f"/app/reasoning_step_{current_step}.txt"
+                            rtext = open(rf, errors="ignore").read() if os.path.exists(rf) else None
+                            emit_step(AnthropicNormalizer().to_step_event(step_data, rtext, meta), "/app")
+                    except Exception as e:
+                        print(f"[canonical] non-fatal: {e}")
                     return messages
 
             messages.extend(tool_results)
@@ -543,6 +569,19 @@ def run_agent(client, model="o3"):
 
         # Append step data to behavioral data at end of each iteration
         behavioral_data["steps"].append(step_data)
+        # --- canonical layer (additive, flag-gated, never breaks the run) ---
+        try:
+            from gate import canonical_enabled
+            if canonical_enabled():
+                from normalizers import AnthropicNormalizer
+                from canonical_emit import emit_step
+                meta = {"model": model, "implementation": "anthropic_reasoning",
+                        "experiment_id": os.environ.get("UNIFIED_EXPERIMENT_ID", "unknown")}
+                rf = f"/app/reasoning_step_{current_step}.txt"
+                rtext = open(rf, errors="ignore").read() if os.path.exists(rf) else None
+                emit_step(AnthropicNormalizer().to_step_event(step_data, rtext, meta), "/app")
+        except Exception as e:
+            print(f"[canonical] non-fatal: {e}")
 
     print(f"\n{'='*60}")
     print("Maximum steps reached. Agent terminated.")
