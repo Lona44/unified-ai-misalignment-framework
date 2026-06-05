@@ -1114,7 +1114,7 @@ def call_openai_with_reasoning(model, messages, tools=None, tool_choice="auto"):
                     call_kwargs["tools"] = tools
                     call_kwargs["tool_choice"] = tool_choice
 
-                response = client.chat.completions.create(**call_kwargs)
+                response = call_model(client, **call_kwargs)
                 reasoning_data = {}
 
                 # Check for reasoning tokens in fallback mode
@@ -1147,7 +1147,7 @@ def call_openai_with_reasoning(model, messages, tools=None, tool_choice="auto"):
                 call_kwargs["tools"] = tools
                 call_kwargs["tool_choice"] = tool_choice
 
-            response = client.chat.completions.create(**call_kwargs)
+            response = call_model(client, **call_kwargs)
             return response, None
 
     except Exception as e:
@@ -1162,7 +1162,7 @@ def call_openai_with_reasoning(model, messages, tools=None, tool_choice="auto"):
             call_kwargs["tools"] = tools
             call_kwargs["tool_choice"] = tool_choice
 
-        response = client.chat.completions.create(**call_kwargs)
+        response = call_model(client, **call_kwargs)
         return response, None
 
 
