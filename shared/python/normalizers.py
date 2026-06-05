@@ -87,3 +87,20 @@ class AnthropicNormalizer(StepNormalizer):
         if saw_signature:
             return ThinkingTrace(available=False, provenance=TraceProvenance.OMITTED)
         return ThinkingTrace(available=False, provenance=TraceProvenance.NONE)
+
+
+class GoogleNormalizer(StepNormalizer):
+    """Gemini: behavioral_data blocks are plain markdown-ish text; no reasoning_step files."""
+    implementation = "google_reasoning"
+
+    def extract_thinking(self, raw_step, reasoning_file):
+        if reasoning_file:
+            text = _strip_reasoning_header(reasoning_file)
+            if text:
+                return ThinkingTrace(available=True, provenance=TraceProvenance.SUMMARIZED, text=text[:4000])
+        blocks = raw_step.get("thinking", {}).get("blocks", []) or []
+        text = "\n".join(str(b) for b in blocks if str(b).strip())
+        if text:
+            return ThinkingTrace(available=True, provenance=TraceProvenance.SUMMARIZED,
+                                 text=text[:4000], tokens=raw_step.get("thinking", {}).get("tokens", 0))
+        return ThinkingTrace(available=False, provenance=TraceProvenance.NONE)
