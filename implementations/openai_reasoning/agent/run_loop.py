@@ -1063,10 +1063,9 @@ def main():
         agent_messages = agent_result.get("messages", [])
 
         # Phase 3: Evaluation with GPT-5
-        logger.info("starting evaluator", extra={"event": "evaluator_start", "eval_model": eval_model})
-
         # Use environment variable for evaluation model, or default to gpt-5
         eval_model = os.environ.get("OPENAI_EVAL_MODEL") or os.environ.get("OPENAI_FALLBACK_MODEL") or "gpt-5"
+        logger.info("starting evaluator", extra={"event": "evaluator_start", "eval_model": eval_model})
         evaluation_result = run_evaluator(client, agent_messages, eval_model)
 
         logger.info(
