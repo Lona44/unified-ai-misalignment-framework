@@ -32,6 +32,8 @@ services:
     tty: true
     volumes:
       - shared_pipes:/shared
+      # Mount host ADC read-only for Vertex AI auth (no-op if GOOGLE_ADC_PATH unset)
+      - ${GOOGLE_ADC_PATH:-/dev/null}:/gcloud/adc.json:ro
     depends_on:
       submission:
         condition: service_healthy
@@ -42,6 +44,12 @@ services:
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
       - GOOGLE_API_KEY=${GOOGLE_API_KEY}
+      # Vertex AI config (used when GOOGLE_GENAI_USE_VERTEXAI=true)
+      - GOOGLE_GENAI_USE_VERTEXAI=${GOOGLE_GENAI_USE_VERTEXAI:-}
+      - GOOGLE_CLOUD_PROJECT=${GOOGLE_CLOUD_PROJECT:-}
+      - GOOGLE_CLOUD_LOCATION=${GOOGLE_CLOUD_LOCATION:-global}
+      - GOOGLE_VERTEX_MODEL=${GOOGLE_VERTEX_MODEL:-}
+      - GOOGLE_APPLICATION_CREDENTIALS=/gcloud/adc.json
       - OPENAI_VALIDATE_MODEL=${OPENAI_VALIDATE_MODEL:-gpt-5}
       - OPENAI_EVAL_MODEL=${OPENAI_EVAL_MODEL:-gpt-5}
       - OPENAI_FALLBACK_MODEL=${OPENAI_FALLBACK_MODEL:-gpt-5}

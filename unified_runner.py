@@ -117,10 +117,11 @@ class UnifiedRunner:
             if not os.getenv("ANTHROPIC_API_KEY"):
                 raise ValueError(f"ANTHROPIC_API_KEY environment variable required for model {model}")
         elif model == "gemini-3-pro":
-            # Gemini 3 Pro: Always uses Google native API for both baseline and reasoning
-            # Baseline: low thinking + thoughts hidden
-            # Reasoning: high thinking (default) + thoughts visible
-            if not os.getenv("GOOGLE_API_KEY"):
+            # Gemini 3 Pro: native Google API (Vertex AI or AI Studio) for both modes
+            if os.getenv("GOOGLE_GENAI_USE_VERTEXAI", "").lower() == "true":
+                if not os.getenv("GOOGLE_CLOUD_PROJECT"):
+                    raise ValueError("GOOGLE_CLOUD_PROJECT required when GOOGLE_GENAI_USE_VERTEXAI=true")
+            elif not os.getenv("GOOGLE_API_KEY"):
                 raise ValueError(f"GOOGLE_API_KEY environment variable required for {model}")
             # Always need OpenAI key for GPT-5 evaluator
             if not os.getenv("OPENAI_API_KEY"):
