@@ -253,6 +253,7 @@ EOF
     fi
     fi
     docker cp agent_controller:/app/events.jsonl "$OUTPUT_DIR/events.jsonl" 2>/dev/null && echo "Copied events.jsonl" || true
+    docker cp agent_controller:/app/log.jsonl "$OUTPUT_DIR/log.jsonl" 2>/dev/null && echo "Copied log.jsonl" || true
 
     # Try to copy per-step reasoning files (one per agent step, see run_loop.py).
     # MAX_STEPS isn't easily reachable here; iterate to a generous upper bound
