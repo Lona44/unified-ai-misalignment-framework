@@ -19,6 +19,12 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
+import sys as _sys
+import os as _os
+_sys.path.insert(0, _os.path.join(_os.path.dirname(__file__), "shared", "python"))
+from obs import setup_logging, get_logger
+logger = get_logger("runner")
+
 
 class UnsupportedModelError(Exception):
     pass
@@ -61,7 +67,7 @@ class UnifiedRunner:
         try:
             with open(config_path) as f:
                 config = json.load(f)
-            print(f"✓ Loaded configuration from {config_path}")
+            logger.info("configuration loaded", extra={"event": "config_loaded", "path": str(config_path)})
             return config
         except Exception as e:
             raise ValueError(f"Failed to load configuration: {e}") from e
@@ -145,7 +151,7 @@ class UnifiedRunner:
         if scenario not in valid_scenarios:
             raise ValueError(f"Supported scenarios: {valid_scenarios}, got: {scenario}")
 
-        print("✓ Configuration validation passed")
+        logger.info("configuration validation passed", extra={"event": "validation_passed"})
 
     def route_experiment(self) -> dict[str, Any]:
         """Route experiment to appropriate implementation based on model and reasoning.
@@ -162,7 +168,7 @@ class UnifiedRunner:
         model = self.config["model_config"]["model"]
         enable_reasoning = self.config["model_config"].get("enable_reasoning", False)
 
-        print(f"🎯 Routing experiment: {model} (reasoning: {enable_reasoning})")
+        logger.info("routing experiment", extra={"event": "route", "model": model, "reasoning": enable_reasoning})
 
         if model in ["o3", "gpt-5", "gpt-5.1", "gpt-5.2"]:
             if enable_reasoning:
@@ -191,27 +197,27 @@ class UnifiedRunner:
 
     def route_to_openai_reasoning(self):
         """Route to OpenAI Reasoning (Responses API + High effort reasoning)."""
-        print("📡 Routing to OpenAI Reasoning (Responses API + reasoning)")
+        logger.info("routing to implementation", extra={"event": "route_selected", "implementation": "openai_reasoning"})
         return self.execute_implementation("openai_reasoning")
 
     def route_to_openai_baseline(self):
         """Route to OpenAI Baseline (Chat API + No reasoning)."""
-        print("📡 Routing to OpenAI Baseline (Chat API + no reasoning)")
+        logger.info("routing to implementation", extra={"event": "route_selected", "implementation": "openai_baseline"})
         return self.execute_implementation("openai_baseline")
 
     def route_to_anthropic_reasoning(self):
         """Route to Anthropic Reasoning (LiteLLM + High effort reasoning)."""
-        print("📡 Routing to Anthropic Reasoning (LiteLLM + reasoning)")
+        logger.info("routing to implementation", extra={"event": "route_selected", "implementation": "anthropic_reasoning"})
         return self.execute_implementation("anthropic_reasoning")
 
     def route_to_anthropic_baseline(self):
         """Route to Anthropic Baseline (LiteLLM + No reasoning)."""
-        print("📡 Routing to Anthropic Baseline (LiteLLM + no reasoning)")
+        logger.info("routing to implementation", extra={"event": "route_selected", "implementation": "anthropic_baseline"})
         return self.execute_implementation("anthropic_baseline")
 
     def route_to_google_reasoning(self):
         """Route to Google Reasoning (Native Generative AI API + thinking mode)."""
-        print("📡 Routing to Google Reasoning (Native API + thinking mode)")
+        logger.info("routing to implementation", extra={"event": "route_selected", "implementation": "google_reasoning"})
         return self.execute_implementation("google_reasoning")
 
     def sanitize_for_docker(self, name: str) -> str:
@@ -271,7 +277,7 @@ class UnifiedRunner:
         temp_dir = tempfile.mkdtemp(prefix=f"unified-experiment-{docker_safe_name}")
         temp_path = Path(temp_dir)
 
-        print(f"🏗️  Preparing execution environment: {temp_path}")
+        logger.info("preparing execution environment", extra={"event": "env_prepare", "temp_path": str(temp_path)})
 
         # Get scenario name from config
         scenario_name = self.config.get("experiment", {}).get("scenario", "binance")
@@ -336,7 +342,7 @@ class UnifiedRunner:
         shutil.copy2(shared_dockerfile, agent_dest / "Dockerfile")
         shutil.copy2(shared_requirements, agent_dest / "requirements.txt")
 
-        print(f"📦 Using shared {asset_type} Docker assets")
+        logger.info("using shared Docker assets", extra={"event": "docker_assets", "asset_type": asset_type})
 
         # Copy execution files
         for file in ["docker-compose.yml", "run.sh"]:
@@ -400,9 +406,9 @@ class UnifiedRunner:
             json.dump(prompt_data, f, indent=2)
 
         if actual_model != model:
-            print(f"✓ Updated PROMPT.json with model: {model} → {actual_model}")
+            logger.info("prompt model remapped", extra={"event": "prompt_updated", "model": model, "actual_model": actual_model})
         else:
-            print(f"✓ Updated PROMPT.json with model: {model}")
+            logger.info("prompt model set", extra={"event": "prompt_updated", "model": model})
 
     def execute_implementation(self, implementation_name: str) -> dict[str, Any]:
         """Execute the selected implementation and return results.
@@ -428,7 +434,7 @@ class UnifiedRunner:
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
             run_id = f"{experiment_id}_{timestamp}"
 
-            print(f"🚀 Executing experiment: {run_id}")
+            logger.info("experiment starting", extra={"event": "experiment_start", "run_id": run_id})
 
             # Set execution parameters
             timeout_minutes = self.config.get("execution", {}).get("timeout_minutes", 30)
@@ -436,6 +442,9 @@ class UnifiedRunner:
             # Execute run.sh with metadata environment variables
             env = os.environ.copy()
             env["RUN_ID"] = run_id
+            # Forward the UNIQUE per-execution id to the container so agent logs
+            # correlate per run (UNIFIED_EXPERIMENT_ID is the non-unique config id).
+            env["UNIFIED_RUN_ID"] = run_id
             env["NO_TIMESTAMP"] = "true"  # We handle timestamps ourselves
 
             # Add metadata for display in step logs
@@ -460,7 +469,7 @@ class UnifiedRunner:
             env["UNIFIED_MAX_STEPS"] = str(self.config["model_config"].get("max_steps", 30))
 
             cmd = ["bash", "./run.sh"]
-            print(f"💻 Running: {' '.join(cmd)} (timeout: {timeout_minutes}m)")
+            logger.info("executing subprocess", extra={"event": "execute", "cmd": " ".join(cmd), "timeout_min": timeout_minutes})
 
             # Stream output live to terminal while capturing for logs
             process = subprocess.Popen(
@@ -478,7 +487,7 @@ class UnifiedRunner:
             try:
                 # Stream output live while capturing
                 for line in process.stdout:
-                    print(line, end="")  # Stream to terminal
+                    logger.info(line.rstrip(), extra={"event": "subprocess_output"})
                     output_lines.append(line)  # Capture for logs
 
                 # Wait for process to complete with timeout
@@ -488,7 +497,7 @@ class UnifiedRunner:
             except subprocess.TimeoutExpired:
                 process.kill()
                 process.wait()
-                print(f"\n⏰ Process timed out after {timeout_minutes} minutes")
+                logger.error("experiment timed out", extra={"event": "timeout", "timeout_min": timeout_minutes})
                 result_returncode = -1
 
             # Create result object for compatibility
@@ -503,6 +512,7 @@ class UnifiedRunner:
             # Copy results to permanent location
             output_dir = self.base_dir / "outputs" / run_id
             output_dir.mkdir(parents=True, exist_ok=True)
+            setup_logging(run_id=run_id, log_dir=str(output_dir))
 
             # Find the actual output directory created by run.sh
             outputs_pattern = list(temp_path.glob("outputs/*"))
@@ -515,7 +525,7 @@ class UnifiedRunner:
             # Create standardized result
             self.create_standardized_result(output_dir, implementation_name, result)
 
-            print(f"✅ Experiment completed: {output_dir}")
+            logger.info("experiment completed", extra={"event": "experiment_complete", "output_dir": str(output_dir)})
             return output_dir
 
         finally:
@@ -544,7 +554,7 @@ class UnifiedRunner:
             try:
                 with open(behavioral_data_path) as f:
                     behavioral_data = json.load(f)
-                print(f"📊 Loaded behavioral data from {behavioral_data_path}")
+                logger.info("behavioral data loaded", extra={"event": "behavioral_data_loaded", "path": str(behavioral_data_path)})
             except Exception:
                 pass
 
@@ -577,7 +587,7 @@ class UnifiedRunner:
         with open(output_dir / "standardized_result.json", "w") as f:
             json.dump(standardized_result, f, indent=2)
 
-        print(f"📊 Created standardized result: {output_dir}/standardized_result.json")
+        logger.info("standardized result written", extra={"event": "standardized_result", "path": f"{output_dir}/standardized_result.json"})
 
 
 def main():
@@ -588,8 +598,12 @@ def main():
 
     args = parser.parse_args()
 
+    # Configure logging up front (console-only here; the file handler is added
+    # once output_dir is known) so early orchestration breadcrumbs — config
+    # load, validation, routing — are not swallowed by the default root logger.
+    setup_logging(level="DEBUG" if args.verbose else None)
     if args.verbose:
-        print("🔧 Verbose mode enabled")
+        logger.debug("verbose mode enabled", extra={"event": "verbose_mode"})
 
     try:
         runner = UnifiedRunner(args.config, args.base_dir)
@@ -605,22 +619,34 @@ def main():
         # Only PASS is success — new failure statuses (e.g. VALIDATION_FAILED)
         # must not silently inherit the success banner via a stale denylist.
         failed = status != "PASS"
-        print("\n" + "=" * 60)
         if failed:
-            print(f"⚠️ EXPERIMENT FINISHED WITH FAILURES (status: {status})")
-            print("   Check run.log in the results directory for details.")
+            logger.warning(
+                "experiment finished with failures",
+                extra={
+                    "event": "verdict",
+                    "status": status,
+                    "results_dir": str(output_dir),
+                    "standardized_result": f"{output_dir}/standardized_result.json",
+                    "run_log": f"{output_dir}/run.log",
+                },
+            )
         else:
-            print(f"🎉 EXPERIMENT COMPLETED (status: {status})")
-        print("=" * 60)
-        print(f"📁 Results: {output_dir}")
-        print(f"📊 Standardized result: {output_dir}/standardized_result.json")
-        print(f"📝 Logs: {output_dir}/run.log")
+            logger.info(
+                "experiment completed",
+                extra={
+                    "event": "verdict",
+                    "status": status,
+                    "results_dir": str(output_dir),
+                    "standardized_result": f"{output_dir}/standardized_result.json",
+                    "run_log": f"{output_dir}/run.log",
+                },
+            )
 
         if failed:
             sys.exit(2)
 
     except Exception as e:
-        print(f"\n❌ Experiment failed: {e}")
+        logger.error("experiment failed", extra={"event": "failure"}, exc_info=True)
         sys.exit(1)
 
 

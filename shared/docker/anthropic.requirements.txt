@@ -1,2 +1,3 @@
 litellm
 openai
+pydantic==2.13.4

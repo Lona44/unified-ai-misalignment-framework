@@ -47,6 +47,9 @@ services:
       - UNIFIED_IMPLEMENTATION=${UNIFIED_IMPLEMENTATION:-Enhanced Palisade}
       - UNIFIED_EXPERIMENT_ID=${UNIFIED_EXPERIMENT_ID:-unknown}
       - UNIFIED_MAX_STEPS=${UNIFIED_MAX_STEPS:-30}
+      - UNIFIED_RUN_ID=${UNIFIED_RUN_ID:-}
+      - EMIT_CANONICAL=${EMIT_CANONICAL:-0}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
     # Agent has access to both networks for communication
     networks:
       - default
