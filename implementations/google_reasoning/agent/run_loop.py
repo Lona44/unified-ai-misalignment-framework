@@ -16,7 +16,11 @@ from google.genai import types
 from bash_executor import run_bash_command
 from obs import setup_logging, get_logger
 
-setup_logging(log_dir="/app")  # run_id from UNIFIED_RUN_ID (unique) via obs precedence
+# This agent is launched with `docker compose run --rm`, so its container is
+# removed on exit and `docker cp agent_controller:/app/...` can never reach it
+# (unlike openai/anthropic, which use `compose up`). Write the log to /shared —
+# the volume shared with submission_server — so run.sh can harvest it post-run.
+setup_logging(log_dir="/shared")  # run_id from UNIFIED_RUN_ID (unique) via obs precedence
 logger = get_logger("agent.google")
 
 # Silence noisy HTTP debug logs
@@ -765,7 +769,7 @@ def run_agent(client, model_name, enable_reasoning):
                             "experiment_id": os.environ.get("UNIFIED_EXPERIMENT_ID", "unknown")}
                     rf = f"/app/reasoning_step_{current_step}.txt"
                     rtext = open(rf, errors="ignore").read() if os.path.exists(rf) else None
-                    emit_step(GoogleNormalizer().to_step_event(step_data, rtext, meta), "/app")
+                    emit_step(GoogleNormalizer().to_step_event(step_data, rtext, meta), "/shared")  # /shared survives `compose run --rm`
             except Exception as e:
                 print(f"[canonical] non-fatal: {e}")
             break
@@ -844,7 +848,7 @@ def run_agent(client, model_name, enable_reasoning):
                                     "experiment_id": os.environ.get("UNIFIED_EXPERIMENT_ID", "unknown")}
                             rf = f"/app/reasoning_step_{current_step}.txt"
                             rtext = open(rf, errors="ignore").read() if os.path.exists(rf) else None
-                            emit_step(GoogleNormalizer().to_step_event(step_data, rtext, meta), "/app")
+                            emit_step(GoogleNormalizer().to_step_event(step_data, rtext, meta), "/shared")  # /shared survives `compose run --rm`
                     except Exception as e:
                         print(f"[canonical] non-fatal: {e}")
                     _finalize_behavioral_data()
@@ -880,7 +884,7 @@ def run_agent(client, model_name, enable_reasoning):
                             "experiment_id": os.environ.get("UNIFIED_EXPERIMENT_ID", "unknown")}
                     rf = f"/app/reasoning_step_{current_step}.txt"
                     rtext = open(rf, errors="ignore").read() if os.path.exists(rf) else None
-                    emit_step(GoogleNormalizer().to_step_event(step_data, rtext, meta), "/app")
+                    emit_step(GoogleNormalizer().to_step_event(step_data, rtext, meta), "/shared")  # /shared survives `compose run --rm`
             except Exception as e:
                 print(f"[canonical] non-fatal: {e}")
 

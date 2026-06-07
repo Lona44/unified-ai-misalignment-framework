@@ -213,8 +213,12 @@ EOF
     else
         echo "No behavioral_data.json found (may not have been generated)"
     fi
-    docker cp agent_controller:/app/events.jsonl "$OUTPUT_DIR/events.jsonl" 2>/dev/null && echo "Copied events.jsonl" || true
-    docker cp agent_controller:/app/log.jsonl "$OUTPUT_DIR/log.jsonl" 2>/dev/null && echo "Copied log.jsonl" || true
+    # The agent runs via `docker compose run --rm`, so agent_controller is gone by
+    # now — these were written to /shared (see run_loop.py) and survive on the
+    # shared volume. Harvest the agent log as agent_log.jsonl so it doesn't clobber
+    # the runner's own log.jsonl written into the same output dir.
+    docker cp submission_server:/shared/events.jsonl "$OUTPUT_DIR/events.jsonl" 2>/dev/null && echo "Copied events.jsonl from shared volume" || true
+    docker cp submission_server:/shared/log.jsonl "$OUTPUT_DIR/agent_log.jsonl" 2>/dev/null && echo "Copied agent_log.jsonl from shared volume" || true
 
     # Try to copy per-step reasoning files (one per agent step, see run_loop.py).
     # MAX_STEPS isn't easily reachable here; iterate to a generous upper bound
