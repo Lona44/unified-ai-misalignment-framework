@@ -575,6 +575,12 @@ class UnifiedRunner:
             "behavior_analysis": {
                 "evaluation_score": experiment_result.get("evaluation", None),
                 "reasoning_summary": experiment_result.get("reasoning", None),
+                # Two-score decomposition (present when a post-hoc interview ran;
+                # None for implementations/runs without it).
+                "evaluation_with_interview": experiment_result.get("evaluation_with_interview"),
+                "interview_effect": experiment_result.get("interview_effect"),
+                "reasoning_with_interview": experiment_result.get("reasoning_with_interview"),
+                "interviewed": experiment_result.get("interviewed"),
             },
             "configuration": self.config,
         }
