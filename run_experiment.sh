@@ -145,6 +145,9 @@ case "$MODEL" in
     gpt52)
         FULL_MODEL="gpt-5.2"
         ;;
+    gpt55)
+        FULL_MODEL="gpt-5.5"
+        ;;
     claude-sonnet)
         FULL_MODEL="claude-sonnet-4-20250514"
         ;;
@@ -195,7 +198,7 @@ case "$MODEL" in
         ;;
     *)
         echo "❌ Error: Unknown model '$MODEL'"
-        echo "Supported models: o3, gpt5, gpt51, gpt52, claude-sonnet, claude-sonnet-new, claude-sonnet-4-6, claude-opus, claude-opus-new, claude-opus-4-5, claude-opus-4-6, claude-opus-4-7, claude-opus-4-8, claude-haiku, kimi-k2, deepseek-r1, gemini-2.5, gemini-2.5-pro, gemini-3-pro, llama-3.3-70b"
+        echo "Supported models: o3, gpt5, gpt51, gpt52, gpt55, claude-sonnet, claude-sonnet-new, claude-sonnet-4-6, claude-opus, claude-opus-new, claude-opus-4-5, claude-opus-4-6, claude-opus-4-7, claude-opus-4-8, claude-haiku, kimi-k2, deepseek-r1, gemini-2.5, gemini-2.5-pro, gemini-3-pro, llama-3.3-70b"
         exit 1
         ;;
 esac

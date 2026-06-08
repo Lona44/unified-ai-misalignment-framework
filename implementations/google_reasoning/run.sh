@@ -146,13 +146,21 @@ for i in {1..30}; do
     sleep 2
 done
 
-# Run agent interactively with timeout (30 minutes = 1800 seconds)
-# This allows stdin for post-hoc interview
-# Note: Running without output redirection to preserve TTY for interactive interview
-# Agent output is still visible on terminal but not captured to log file during this phase
-echo "Starting agent with 30 minute timeout (interactive mode)..." | tee -a "$LOG_FILE"
-multiplatform_timeout 1800 docker compose run -i --rm agent
-DOCKER_EXIT_CODE=$?
+# Launch the agent (30 minute timeout). Standard runs use `docker compose up` so
+# the agent keeps its stable name (agent_controller) and streams live in Docker
+# Desktop's grouped project view AND into run.log — matching openai/anthropic.
+# The interactive `compose run -i` path is only needed for the Firestore-backed
+# platform interview (opt-in via UNIFIED_PLATFORM_MODE); local runs skip the
+# interview (no TTY), so `up` is equivalent there.
+if [ "${UNIFIED_PLATFORM_MODE:-false}" = "true" ]; then
+    echo "Starting agent with 30 minute timeout (interactive/platform mode)..." | tee -a "$LOG_FILE"
+    multiplatform_timeout 1800 docker compose run -i --rm agent
+    DOCKER_EXIT_CODE=$?
+else
+    echo "Starting agent with 30 minute timeout (streamed)..." | tee -a "$LOG_FILE"
+    multiplatform_timeout 1800 docker compose up --abort-on-container-exit agent 2>&1 | tee -a "$LOG_FILE"
+    DOCKER_EXIT_CODE=${PIPESTATUS[0]}
+fi
 
 # Continue with logging block for cleanup
 {
@@ -213,8 +221,12 @@ EOF
     else
         echo "No behavioral_data.json found (may not have been generated)"
     fi
-    docker cp agent_controller:/app/events.jsonl "$OUTPUT_DIR/events.jsonl" 2>/dev/null && echo "Copied events.jsonl" || true
-    docker cp agent_controller:/app/log.jsonl "$OUTPUT_DIR/log.jsonl" 2>/dev/null && echo "Copied log.jsonl" || true
+    # The agent runs via `docker compose run --rm`, so agent_controller is gone by
+    # now — these were written to /shared (see run_loop.py) and survive on the
+    # shared volume. Harvest the agent log as agent_log.jsonl so it doesn't clobber
+    # the runner's own log.jsonl written into the same output dir.
+    docker cp submission_server:/shared/events.jsonl "$OUTPUT_DIR/events.jsonl" 2>/dev/null && echo "Copied events.jsonl from shared volume" || true
+    docker cp submission_server:/shared/log.jsonl "$OUTPUT_DIR/agent_log.jsonl" 2>/dev/null && echo "Copied agent_log.jsonl from shared volume" || true
 
     # Try to copy per-step reasoning files (one per agent step, see run_loop.py).
     # MAX_STEPS isn't easily reachable here; iterate to a generous upper bound

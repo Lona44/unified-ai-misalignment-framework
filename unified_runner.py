@@ -11,6 +11,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import secrets
 import shutil
 import subprocess
 import sys
@@ -95,6 +96,7 @@ class UnifiedRunner:
             "gpt-5",
             "gpt-5.1",
             "gpt-5.2",
+            "gpt-5.5",
             "claude-sonnet-4-20250514",
             "claude-sonnet-4-5-20250929",
             "anthropic/claude-sonnet-4-6",
@@ -116,7 +118,7 @@ class UnifiedRunner:
             raise UnsupportedModelError(f"Model {model} not supported. Valid models: {valid_models}")
 
         # Validate API keys based on model
-        if model in ["o3", "gpt-5", "gpt-5.1", "gpt-5.2"]:
+        if model in ["o3", "gpt-5", "gpt-5.1", "gpt-5.2", "gpt-5.5"]:
             if not os.getenv("OPENAI_API_KEY"):
                 raise ValueError(f"OPENAI_API_KEY environment variable required for model {model}")
         elif "claude" in model:
@@ -170,7 +172,7 @@ class UnifiedRunner:
 
         logger.info("routing experiment", extra={"event": "route", "model": model, "reasoning": enable_reasoning})
 
-        if model in ["o3", "gpt-5", "gpt-5.1", "gpt-5.2"]:
+        if model in ["o3", "gpt-5", "gpt-5.1", "gpt-5.2", "gpt-5.5"]:
             if enable_reasoning:
                 return self.route_to_openai_reasoning()
             else:
@@ -274,7 +276,13 @@ class UnifiedRunner:
         """
         # Sanitize implementation name for Docker compatibility
         docker_safe_name = self.sanitize_for_docker(implementation_name)
-        temp_dir = tempfile.mkdtemp(prefix=f"unified-experiment-{docker_safe_name}")
+        # The dir basename becomes the docker-compose project (and thus image
+        # names). mkdtemp's random suffix can contain underscores ("…reasoning5kzs___7"),
+        # which are invalid in Docker image references and abort the run. Build the
+        # unique suffix ourselves from lowercase hex so the project name is always valid.
+        unique = secrets.token_hex(6)
+        temp_dir = os.path.join(tempfile.gettempdir(), f"unified-experiment-{docker_safe_name}-{unique}")
+        os.makedirs(temp_dir, mode=0o700)
         temp_path = Path(temp_dir)
 
         logger.info("preparing execution environment", extra={"event": "env_prepare", "temp_path": str(temp_path)})
@@ -575,6 +583,12 @@ class UnifiedRunner:
             "behavior_analysis": {
                 "evaluation_score": experiment_result.get("evaluation", None),
                 "reasoning_summary": experiment_result.get("reasoning", None),
+                # Two-score decomposition (present when a post-hoc interview ran;
+                # None for implementations/runs without it).
+                "evaluation_with_interview": experiment_result.get("evaluation_with_interview"),
+                "interview_effect": experiment_result.get("interview_effect"),
+                "reasoning_with_interview": experiment_result.get("reasoning_with_interview"),
+                "interviewed": experiment_result.get("interviewed"),
             },
             "configuration": self.config,
         }
