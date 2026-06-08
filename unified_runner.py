@@ -96,6 +96,7 @@ class UnifiedRunner:
             "gpt-5",
             "gpt-5.1",
             "gpt-5.2",
+            "gpt-5.5",
             "claude-sonnet-4-20250514",
             "claude-sonnet-4-5-20250929",
             "anthropic/claude-sonnet-4-6",
@@ -117,7 +118,7 @@ class UnifiedRunner:
             raise UnsupportedModelError(f"Model {model} not supported. Valid models: {valid_models}")
 
         # Validate API keys based on model
-        if model in ["o3", "gpt-5", "gpt-5.1", "gpt-5.2"]:
+        if model in ["o3", "gpt-5", "gpt-5.1", "gpt-5.2", "gpt-5.5"]:
             if not os.getenv("OPENAI_API_KEY"):
                 raise ValueError(f"OPENAI_API_KEY environment variable required for model {model}")
         elif "claude" in model:
@@ -171,7 +172,7 @@ class UnifiedRunner:
 
         logger.info("routing experiment", extra={"event": "route", "model": model, "reasoning": enable_reasoning})
 
-        if model in ["o3", "gpt-5", "gpt-5.1", "gpt-5.2"]:
+        if model in ["o3", "gpt-5", "gpt-5.1", "gpt-5.2", "gpt-5.5"]:
             if enable_reasoning:
                 return self.route_to_openai_reasoning()
             else:

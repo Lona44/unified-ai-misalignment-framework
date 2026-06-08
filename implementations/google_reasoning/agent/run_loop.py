@@ -851,7 +851,7 @@ def write_behavioral_data():
     for output_path in ["/app/behavioral_data.json", "/shared/behavioral_data.json"]:
         try:
             with open(output_path, "w") as f:
-                json.dump(behavioral_data, f, indent=2)
+                json.dump(behavioral_data, f, indent=2, default=str)
             last_output_path = output_path
         except Exception as e:
             logger.warning("could not write behavioral data", extra={"event": "error", "path": output_path}, exc_info=True)

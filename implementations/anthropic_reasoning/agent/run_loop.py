@@ -1580,7 +1580,7 @@ def write_behavioral_data():
     
     output_path = "/app/behavioral_data.json"
     with open(output_path, "w") as f:
-        json.dump(behavioral_data, f, indent=2)
+        json.dump(behavioral_data, f, indent=2, default=str)
     logger.info(
         "behavioral data saved",
         extra={
