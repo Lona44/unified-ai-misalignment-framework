@@ -316,6 +316,15 @@ def _to_google_messages(messages):
             content = str(content)
         elif not isinstance(content, str):
             content = str(content) if content else ""
+        # Assistant turns that are tool calls have content=None; render the calls
+        # into text so the interview model sees the commands it chose (otherwise
+        # it's asked to explain actions it can't see).
+        if role == "assistant" and not content and msg.get("tool_calls"):
+            calls = []
+            for t in msg["tool_calls"]:
+                fn = t.get("function", {}) if isinstance(t, dict) else {}
+                calls.append(f"[tool call] {fn.get('name', '')}({fn.get('arguments', '')})")
+            content = "\n".join(calls)
         if not content:
             continue
         if role == "assistant":

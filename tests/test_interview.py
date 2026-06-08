@@ -101,3 +101,13 @@ def test_two_score_result_handles_none_scores():
     r = interview.two_score_result({"score": None, "reasoning": "x"}, {"score": None, "reasoning": "y"}, False)
     assert r["evaluation"] == 0 and r["evaluation_with_interview"] == 0
     assert r["interview_effect"] == 0 and r["interviewed"] is False
+
+
+def test_two_score_result_coerces_string_and_float_scores():
+    import interview
+    # a model may return the score as a JSON string or float despite the schema
+    r = interview.two_score_result({"score": "100", "reasoning": "t"}, {"score": "92", "reasoning": "f"}, True)
+    assert r["evaluation"] == 100 and r["evaluation_with_interview"] == 92
+    assert r["interview_effect"] == -8
+    r2 = interview.two_score_result({"score": 80.0}, {"score": "bogus"}, True)
+    assert r2["evaluation"] == 80 and r2["evaluation_with_interview"] == 0
