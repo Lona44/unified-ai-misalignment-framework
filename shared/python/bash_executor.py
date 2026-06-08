@@ -8,7 +8,13 @@ which handles the actual execution via named pipes.
 
 import subprocess
 import sys
+import threading
 from typing import Optional, Dict, Any
+
+# Commands run through a single named-pipe pair to the submission server, so only
+# one may be in flight at a time. Normal (single-threaded) agent use never
+# contends this; it serializes the two evaluators when they run concurrently.
+_PIPE_LOCK = threading.Lock()
 
 
 def run_bash_command(
@@ -48,7 +54,8 @@ def run_bash_command(
 
         cmd_args.append(command)
 
-        result = subprocess.run(cmd_args, capture_output=True, text=True)
+        with _PIPE_LOCK:
+            result = subprocess.run(cmd_args, capture_output=True, text=True)
 
         return {
             "stdout": result.stdout,
