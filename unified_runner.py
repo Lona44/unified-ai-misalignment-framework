@@ -11,6 +11,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import secrets
 import shutil
 import subprocess
 import sys
@@ -274,7 +275,13 @@ class UnifiedRunner:
         """
         # Sanitize implementation name for Docker compatibility
         docker_safe_name = self.sanitize_for_docker(implementation_name)
-        temp_dir = tempfile.mkdtemp(prefix=f"unified-experiment-{docker_safe_name}")
+        # The dir basename becomes the docker-compose project (and thus image
+        # names). mkdtemp's random suffix can contain underscores ("…reasoning5kzs___7"),
+        # which are invalid in Docker image references and abort the run. Build the
+        # unique suffix ourselves from lowercase hex so the project name is always valid.
+        unique = secrets.token_hex(6)
+        temp_dir = os.path.join(tempfile.gettempdir(), f"unified-experiment-{docker_safe_name}-{unique}")
+        os.makedirs(temp_dir, mode=0o700)
         temp_path = Path(temp_dir)
 
         logger.info("preparing execution environment", extra={"event": "env_prepare", "temp_path": str(temp_path)})
