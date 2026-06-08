@@ -225,9 +225,11 @@ def get_model_response(client, model, messages, tools=None, current_step=1):
                             else:
                                 wrapped_lines.append(line)
                         wrapped_text = "\n".join(wrapped_lines)
-                        logger.debug(
-                            "reasoning summary",
-                            extra={"event": "reasoning_summary", "model": model, "summary_index": i, "text": wrapped_text},
+                        # INFO + full text in the message so the reasoning streams live in
+                        # Docker logs / console (the console formatter prints only the message).
+                        logger.info(
+                            "reasoning | %s", wrapped_text,
+                            extra={"event": "reasoning_summary", "model": model, "summary_index": i},
                         )
 
                     # Save consolidated reasoning to file

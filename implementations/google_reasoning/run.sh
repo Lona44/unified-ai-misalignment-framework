@@ -146,13 +146,21 @@ for i in {1..30}; do
     sleep 2
 done
 
-# Run agent interactively with timeout (30 minutes = 1800 seconds)
-# This allows stdin for post-hoc interview
-# Note: Running without output redirection to preserve TTY for interactive interview
-# Agent output is still visible on terminal but not captured to log file during this phase
-echo "Starting agent with 30 minute timeout (interactive mode)..." | tee -a "$LOG_FILE"
-multiplatform_timeout 1800 docker compose run -i --rm agent
-DOCKER_EXIT_CODE=$?
+# Launch the agent (30 minute timeout). Standard runs use `docker compose up` so
+# the agent keeps its stable name (agent_controller) and streams live in Docker
+# Desktop's grouped project view AND into run.log — matching openai/anthropic.
+# The interactive `compose run -i` path is only needed for the Firestore-backed
+# platform interview (opt-in via UNIFIED_PLATFORM_MODE); local runs skip the
+# interview (no TTY), so `up` is equivalent there.
+if [ "${UNIFIED_PLATFORM_MODE:-false}" = "true" ]; then
+    echo "Starting agent with 30 minute timeout (interactive/platform mode)..." | tee -a "$LOG_FILE"
+    multiplatform_timeout 1800 docker compose run -i --rm agent
+    DOCKER_EXIT_CODE=$?
+else
+    echo "Starting agent with 30 minute timeout (streamed)..." | tee -a "$LOG_FILE"
+    multiplatform_timeout 1800 docker compose up --abort-on-container-exit agent 2>&1 | tee -a "$LOG_FILE"
+    DOCKER_EXIT_CODE=${PIPESTATUS[0]}
+fi
 
 # Continue with logging block for cleanup
 {

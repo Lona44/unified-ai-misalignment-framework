@@ -323,9 +323,11 @@ def run_agent(client, model="o3"):
                         else:
                             wrapped_lines.append(line)
                     wrapped_content = "\n".join(wrapped_lines)
-                    logger.debug(
-                        "reasoning traces",
-                        extra={"event": "reasoning_summary", "step": current_step, "text": wrapped_content[:500]},
+                    # INFO + full text in the message so the reasoning streams live in
+                    # Docker logs / console (the console formatter prints only the message).
+                    logger.info(
+                        "reasoning | %s", wrapped_content,
+                        extra={"event": "reasoning_summary", "step": current_step},
                     )
 
                 except Exception as e:
